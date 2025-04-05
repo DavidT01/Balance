@@ -36,7 +36,7 @@ public plugin_init() {
 public CmdJoinTeam(id){
 	if(!flagCheck(id,"a")) {
 		client_printc(id,"!g[!tFatality Family!g] Menjanje tima je zabranjeno.")
-		//client_print(id,print_chat,"%d %d %d %d",Players[id][kills], Players[id][deaths], Players[id][team], Players[id][score]);
+		//client_print(id,print_chat,"%d %d %d %d",Players[id][kills], Players[id][deaths], Players[id][team], Players[id][score]); test
 		return PLUGIN_HANDLED;
 	}
 	else return PLUGIN_CONTINUE;
