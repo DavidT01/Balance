@@ -28,8 +28,35 @@ public plugin_init() {
 	register_clcmd("jointeam", "CmdJoinTeam");
 	register_clcmd("chooseteam", "CmdJoinTeam");
 	
+	register_event("SendAudio","round_end","a","2=%!MRAD_terwin","2=%!MRAD_ctwin","2=%!MRAD_rounddraw") // Round End
+	register_event("TeamInfo", "printTeam", "a");
+	
 	for(new i = 0; i < 33; i++){
 		playerSetData(i, 0, 0, UNDEFINED, 0);
+	}
+}
+
+public printTeam(){
+	new id = read_data(1)
+	new teamStr[2];
+	read_data(2, teamStr, charsmax(teamStr));
+	client_print(id, print_chat, "%d %s", id, teamStr);
+	client_print(id, print_chat, "%d %d", id, Players[id][team]);
+	switch(teamStr[0]){
+		case 'T': Players[id][team] = TS;
+		case 'C': Players[id][team] = CTS;
+		case 'S': Players[id][team] = SPEC;
+		default: Players[id][team] = UNASSIGNED;
+	}
+	client_print(id, print_chat, "%d %d", id, Players[id][team]);
+}
+
+public round_end(){
+	new c = get_playersnum();
+	for(new i = 1; i < c; i++){
+		if(is_user_connected(i)){
+			client_print(i, print_chat, "%d", Players[i][team]);
+		}
 	}
 }
 
@@ -39,7 +66,23 @@ public CmdJoinTeam(id){
 		//client_print(id,print_chat,"%d %d %d %d",Players[id][kills], Players[id][deaths], Players[id][team], Players[id][score]); test
 		return PLUGIN_HANDLED;
 	}
-	else return PLUGIN_CONTINUE;
+	else {
+		new args[16];
+		read_args(args, charsmax(args));
+		remove_quotes(args);
+		new newTeam = str_to_num(args);
+		new ar[32];
+		read_argv(0, ar, 32);
+		client_print(id, print_chat, "%d", newTeam);
+		client_print(id, print_chat, "%s", ar);
+		return PLUGIN_CONTINUE;
+	}
+}
+
+public jointeam(id){
+	new arg[2]
+	read_argv(1,arg,1)
+	client_print(id, print_chat, "%d", str_to_num(arg));
 }
 
 bool:flagCheck(id, flag[]) {
