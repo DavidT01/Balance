@@ -2,6 +2,7 @@
 #include <amxmisc>
 #include <hamsandwich>
 #include <cstrike>
+#include <fakemeta>
 
 #define PLUGIN "ReBalance"
 #define VERSION "1.0"
@@ -43,69 +44,52 @@ public plugin_init() {
 	register_message(get_user_msgid("ShowMenu"), "message_show_menu")
 	register_message(get_user_msgid("VGUIMenu"), "message_vgui_menu")
 	
+	register_clcmd("amx_transfer", "cmdtransfer")
+	
 	for(new i = 0; i < 33; i++){
 		playerSetData(i, 0, 0, UNDEFINED, 0);
 		canSwitchTeam[i] = 1;
 	}
 }
 
-//////////////////////////////////////////
-
-public message_show_menu(msgid, dest, id) {
-
-	static team_select[] = "#Team_Select"
-	static menu_text_code[sizeof team_select]
-	get_msg_arg_string(4, menu_text_code, sizeof menu_text_code - 1)
-	if (!equal(menu_text_code, team_select))
-		return PLUGIN_CONTINUE
-	
-	if(!flagCheck(id, "a")){
-		set_force_team_join_task(id, msgid)
+public cmdtransfer(id){
+	new ac = read_argc();
+	if(ac != 4) {
+		client_print(id, print_console, "Wrong usage.");
 		return PLUGIN_HANDLED;
 	}
-	else return PLUGIN_HANDLED;
-}
-
-public message_vgui_menu(msgid, dest, id) {
-	if (get_msg_arg_int(1) != TEAM_SELECT_VGUI_MENU_ID)
-		return PLUGIN_CONTINUE
-	
-	if(!flagCheck(id,"a")){
-		set_force_team_join_task(id, msgid)
+	new playerTeam = read_argv_int(2), playerClass = read_argv_int(3), name[64];
+	read_argv(1, name, sizeof(name));
+	new uid = get_user_index(name);
+	if(pev_valid(uid) != 2){
+		client_print(id, print_console, "Invalid name.");
 		return PLUGIN_HANDLED;
 	}
-	else return PLUGIN_HANDLED;
+	if(playerTeam > 0 && playerTeam < 4 && playerClass > 0)
+		transferPlayer(uid, playerTeam, playerClass);
+	else client_print(id, print_console, "Bad team/class.");
+	return PLUGIN_HANDLED;
 }
 
-set_force_team_join_task(id, menu_msgid) {
-	static param_menu_msgid[2]
-	param_menu_msgid[0] = menu_msgid
-	set_task(AUTO_TEAM_JOIN_DELAY, "task_force_team_join", id, param_menu_msgid, sizeof param_menu_msgid)
-}
+public transferPlayer(id, playerTeam, playerClass){
+	//new jointeam[] = "jointeam", joinclass[] = "joinclass";
 
-public task_force_team_join(menu_msgid[], id) {
-	if (get_user_team(id))
-		return
-
-	force_team_join(id, menu_msgid[0], "5")
-}
-
-stock force_team_join(id, menu_msgid, /* const */ class[] = "0") {
-	static jointeam[] = "jointeam"
-	if (class[0] == '0') {
-		engclient_cmd(id, jointeam, "5")
-		return
-	}
-
-	static msg_block, joinclass[] = "joinclass"
+	static msg_block;
+	new menu_msgid = get_user_msgid("ShowMenu");
 	msg_block = get_msg_block(menu_msgid)
 	set_msg_block(menu_msgid, BLOCK_SET)
-	engclient_cmd(id, jointeam, "5")
-	engclient_cmd(id, joinclass,"5")
+	
+	if(playerTeam == 1) cs_set_user_team(id, CS_TEAM_T, playerClass,true);
+	else if(playerTeam == 2) cs_set_user_team(id, CS_TEAM_CT, playerClass,true);
+	else cs_set_user_team(id, CS_TEAM_SPECTATOR, 0,true);
+	
+	//engclient_cmd(id, jointeam, "1")
+	//engclient_cmd(id, joinclass, class)
+	
+	cs_reset_user_model(id);
 	set_msg_block(menu_msgid, msg_block)
 }
 
-//////////////////////////////////////////////////////////////////////////
 
 public onDeath() {
 	new killer = read_data(1);
@@ -275,3 +259,66 @@ public client_death(killer, victim, wpnindex) {
 			Players[victim][deaths]++;
 	}		
 }
+
+/*
+
+		AUTO-JOIN
+
+*/
+
+public message_show_menu(msgid, dest, id) {
+
+	static team_select[] = "#Team_Select"
+	static menu_text_code[sizeof team_select]
+	get_msg_arg_string(4, menu_text_code, sizeof menu_text_code - 1)
+	if (!equal(menu_text_code, team_select))
+		return PLUGIN_CONTINUE
+	
+	if(!flagCheck(id, "a")){
+		set_force_team_join_task(id, msgid)
+		return PLUGIN_HANDLED;
+	}
+	else return PLUGIN_HANDLED;
+}
+
+public message_vgui_menu(msgid, dest, id) {
+	if (get_msg_arg_int(1) != TEAM_SELECT_VGUI_MENU_ID)
+		return PLUGIN_CONTINUE
+	
+	if(!flagCheck(id,"a")){
+		set_force_team_join_task(id, msgid)
+		return PLUGIN_HANDLED;
+	}
+	else return PLUGIN_HANDLED;
+}
+
+set_force_team_join_task(id, menu_msgid) {
+	static param_menu_msgid[2]
+	param_menu_msgid[0] = menu_msgid
+	set_task(AUTO_TEAM_JOIN_DELAY, "task_force_team_join", id, param_menu_msgid, sizeof param_menu_msgid)
+}
+
+public task_force_team_join(menu_msgid[], id) {
+	if (get_user_team(id))
+		return
+
+	force_team_join(id, menu_msgid[0], "5")
+}
+
+stock force_team_join(id, menu_msgid, /* const */ class[] = "0") {
+	static jointeam[] = "jointeam"
+	if (class[0] == '0') {
+		engclient_cmd(id, jointeam, "5")
+		return
+	}
+
+	static msg_block, joinclass[] = "joinclass"
+	msg_block = get_msg_block(menu_msgid)
+	set_msg_block(menu_msgid, BLOCK_SET)
+	engclient_cmd(id, jointeam, "5")
+	engclient_cmd(id, joinclass,"5")
+	set_msg_block(menu_msgid, msg_block)
+}
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
+*/
