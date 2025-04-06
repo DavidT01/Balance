@@ -14,6 +14,9 @@
 #define AUTO_TEAM 		5
 #define UNDEFINED               6
 
+#define AUTO_TEAM_JOIN_DELAY 0.1
+#define TEAM_SELECT_VGUI_MENU_ID 2
+
 enum Player {
 	kills,
 	deaths,
@@ -22,6 +25,7 @@ enum Player {
 }
 
 new Players[33][Player]
+new canSwitchTeam[33]
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
@@ -36,9 +40,72 @@ public plugin_init() {
 	
 	RegisterHam(Ham_Spawn, "player", "onSpawn", 1);
 	
-	for(new i = 0; i < 33; i++)
+	register_message(get_user_msgid("ShowMenu"), "message_show_menu")
+	register_message(get_user_msgid("VGUIMenu"), "message_vgui_menu")
+	
+	for(new i = 0; i < 33; i++){
 		playerSetData(i, 0, 0, UNDEFINED, 0);
+		canSwitchTeam[i] = 1;
+	}
 }
+
+//////////////////////////////////////////
+
+public message_show_menu(msgid, dest, id) {
+
+	static team_select[] = "#Team_Select"
+	static menu_text_code[sizeof team_select]
+	get_msg_arg_string(4, menu_text_code, sizeof menu_text_code - 1)
+	if (!equal(menu_text_code, team_select))
+		return PLUGIN_CONTINUE
+	
+	if(!flagCheck(id, "a")){
+		set_force_team_join_task(id, msgid)
+		return PLUGIN_HANDLED;
+	}
+	else return PLUGIN_HANDLED;
+}
+
+public message_vgui_menu(msgid, dest, id) {
+	if (get_msg_arg_int(1) != TEAM_SELECT_VGUI_MENU_ID)
+		return PLUGIN_CONTINUE
+	
+	if(!flagCheck(id,"a")){
+		set_force_team_join_task(id, msgid)
+		return PLUGIN_HANDLED;
+	}
+	else return PLUGIN_HANDLED;
+}
+
+set_force_team_join_task(id, menu_msgid) {
+	static param_menu_msgid[2]
+	param_menu_msgid[0] = menu_msgid
+	set_task(AUTO_TEAM_JOIN_DELAY, "task_force_team_join", id, param_menu_msgid, sizeof param_menu_msgid)
+}
+
+public task_force_team_join(menu_msgid[], id) {
+	if (get_user_team(id))
+		return
+
+	force_team_join(id, menu_msgid[0], "5")
+}
+
+stock force_team_join(id, menu_msgid, /* const */ class[] = "0") {
+	static jointeam[] = "jointeam"
+	if (class[0] == '0') {
+		engclient_cmd(id, jointeam, "5")
+		return
+	}
+
+	static msg_block, joinclass[] = "joinclass"
+	msg_block = get_msg_block(menu_msgid)
+	set_msg_block(menu_msgid, BLOCK_SET)
+	engclient_cmd(id, jointeam, "5")
+	engclient_cmd(id, joinclass,"5")
+	set_msg_block(menu_msgid, msg_block)
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 public onDeath() {
 	new killer = read_data(1);
@@ -46,7 +113,8 @@ public onDeath() {
 	new killerName[32], victimName[32];
 	get_user_name(killer, killerName, 32);
 	get_user_name(victim, victimName, 32);
-	client_print(0, print_chat, "killer: [%d] %s, victim: [%d] %s", killer, killerName, victim, victimName);
+	
+	//client_print(0, print_chat, "killer: [%d] %s, victim: [%d] %s", killer, killerName, victim, victimName);
 
 	if (killer > 0 && killer <= 32 && killer != victim)
 		Players[killer][kills]++;
@@ -58,7 +126,8 @@ public onDeath() {
 public onSpawn(id) {
 	new name[32];
 	get_user_name(id, name, 32);
-	client_print(id, print_chat, "[%d] %s in %d, kills: %d, deaths: %d", id, name, Players[id][team], Players[id][kills], Players[id][deaths]);
+	canSwitchTeam[id] = 1;
+	//client_print(id, print_chat, "[%d] %s in %d, kills: %d, deaths: %d", id, name, Players[id][team], Players[id][kills], Players[id][deaths]);
 	return HAM_IGNORED;
 }
 
@@ -86,19 +155,26 @@ public roundEnd() {
 public CmdJoinTeam(id) {
 	if(!flagCheck(id,"a"))
 		client_printc(id,"!g[!tFatality Family!g] Menjanje tima je zabranjeno.")
-	else
-		show_custom_team_menu(id);
+	else {
+		if(canSwitchTeam[id])
+			show_custom_team_menu(id);
+		else client_printc(id, "!g[!tFatality Family!g] Ne mozes ponovo promeniti tim.");
+	}
 	return PLUGIN_HANDLED;
 }
 
 public show_custom_team_menu(id) {
-    new menu = menu_create("Select Your Team:", "team_menu_handler");
+	new menu = menu_create("Select Your Team:", "team_menu_handler");
 
-    menu_additem(menu, "Terrorists", "1", 0);
-    menu_additem(menu, "Counter-Terrorists", "2", 0);
+	menu_additem(menu, "Terrorists", "1", 0);
+	menu_additem(menu, "Counter-Terrorists", "2", 0);
+	menu_addblank2(menu);
+	menu_addblank2(menu);
+	menu_addblank2(menu);
+	menu_additem(menu, "Spectate", "6", 0); 
 
-    menu_setprop(menu, MPROP_EXIT, MEXIT_ALL);
-    menu_display(id, menu, 0);
+	menu_setprop(menu, MPROP_EXIT, MEXIT_ALL);
+	menu_display(id, menu, 0);
 }
 
 public team_menu_handler(id, menu, item) {
@@ -116,12 +192,23 @@ public team_menu_handler(id, menu, item) {
     new choice = str_to_num(info);
     static jointeam[] = "jointeam";
     static joinclass[] = "joinclass";
-    if(choice == 1)
+    if(choice == 1){
 	engclient_cmd(id, jointeam, "1");
-    else if(choice == 2)
+	engclient_cmd(id, joinclass, "5");
+	canSwitchTeam[id] = 0;
+}
+    else if(choice == 2){
 	engclient_cmd(id, jointeam, "2");
-    engclient_cmd(id, joinclass, "5");
-    
+	engclient_cmd(id, joinclass, "5");
+	canSwitchTeam[id] = 0;
+}
+    else if(choice ==6){
+    	if(!is_user_alive(id)){
+		engclient_cmd(id,jointeam,"3");
+		canSwitchTeam[id] = 0;
+	}
+	else client_printc(id, "!g[!tFatality Family!g] Ne mozes uci u spectate dok si ziv.");
+}
     menu_destroy(menu);
 }
 
@@ -163,10 +250,14 @@ public playerSetData(id, k, d, t, s) {
 
 public client_authorized(id) {
 	playerSetData(id, 0, 0, UNASSIGNED, 0);
+	canSwitchTeam[id] = 1;
+	if(flagCheck(id, "a"))
+		set_task(4.0, "show_custom_team_menu", id);
 }
 
 public client_disconnected(id) {
 	playerSetData(id, 0, 0, UNDEFINED, 0);
+	canSwitchTeam[id] = 1;
 }
 
 public client_death(killer, victim, wpnindex) {
@@ -174,7 +265,8 @@ public client_death(killer, victim, wpnindex) {
 		new killerName[32], victimName[32];
 		get_user_name(killer, killerName, 32);
 		get_user_name(victim, victimName, 32);
-		client_print(0, print_chat, "killer: [%d] %s, victim: [%d] %s", killer, killerName, victim, victimName);
+		
+		//client_print(0, print_chat, "killer: [%d] %s, victim: [%d] %s", killer, killerName, victim, victimName);
 		
 		if (killer > 0 && killer <= 32 && killer != victim)
 			Players[killer][kills]++;
