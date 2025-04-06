@@ -1,5 +1,6 @@
 #include <amxmodx>
 #include <amxmisc>
+#include <hamsandwich>
 
 #define PLUGIN "ReBalance"
 #define VERSION "1.0"
@@ -28,9 +29,11 @@ public plugin_init() {
 	register_clcmd("jointeam", "CmdJoinTeam");
 	register_clcmd("chooseteam", "CmdJoinTeam");
 	
-	register_event("SendAudio","round_end","a","2=%!MRAD_terwin","2=%!MRAD_ctwin","2=%!MRAD_rounddraw") // Round End
+	//register_event("SendAudio","roundEnd","a","2=%!MRAD_terwin","2=%!MRAD_ctwin","2=%!MRAD_rounddraw") // Round End
 	register_event("TeamInfo", "updateTeam", "a"); // Team Change
-	register_event("DeathMsg", "onDeath", "a"); // Kill
+	register_event("DeathMsg", "onDeath", "a"); // Death
+	
+	RegisterHam(Ham_Spawn, "player", "onSpawn", 1);
 	
 	for(new i = 0; i < 33; i++)
 		playerSetData(i, 0, 0, UNDEFINED, 0);
@@ -39,12 +42,23 @@ public plugin_init() {
 public onDeath() {
 	new killer = read_data(1);
 	new victim = read_data(2);
+	new killerName[32], victimName[32];
+	get_user_name(killer, killerName, 32);
+	get_user_name(victim, victimName, 32);
+	client_print(0, print_chat, "killer: [%d] %s, victim: [%d] %s", killer, killerName, victim, victimName);
 
 	if (killer > 0 && killer <= 32 && killer != victim)
 		Players[killer][kills]++;
 
 	if (victim > 0 && victim <= 32)
 		Players[victim][deaths]++;
+}
+
+public onSpawn(id) {
+	new name[32];
+	get_user_name(id, name, 32);
+	client_print(id, print_chat, "[%d] %s in %d, kills: %d, deaths: %d", id, name, Players[id][team], Players[id][kills], Players[id][deaths]);
+	return HAM_IGNORED;
 }
 
 public updateTeam() {
@@ -62,11 +76,10 @@ public updateTeam() {
 	//client_print(id, print_chat, "%d %d", id, Players[id][team]);
 }
 
-public round_end() {
-	new c = get_playersnum();
-	for(new i = 1; i < c; i++)
+public roundEnd() {
+	for(new i = 0; i < 33; i++)
 		if(is_user_connected(i))
-			client_print(i, print_chat, "%d", Players[i][team]);
+			client_print(i, print_chat, "[%d] kills: %d,  deaths: %d", i, Players[i][kills], Players[i][deaths]);
 }
 
 public CmdJoinTeam(id) {
@@ -136,4 +149,19 @@ public client_authorized(id) {
 
 public client_disconnected(id) {
 	playerSetData(id, 0, 0, UNDEFINED, 0);
+}
+
+public client_death(killer, victim, wpnindex) {
+	if(wpnindex == 6) {
+		new killerName[32], victimName[32];
+		get_user_name(killer, killerName, 32);
+		get_user_name(victim, victimName, 32);
+		client_print(0, print_chat, "killer: [%d] %s, victim: [%d] %s", killer, killerName, victim, victimName);
+		
+		if (killer > 0 && killer <= 32 && killer != victim)
+			Players[killer][kills]++;
+	
+		if (victim > 0 && victim <= 32)
+			Players[victim][deaths]++;
+	}		
 }
