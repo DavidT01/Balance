@@ -1,6 +1,7 @@
 #include <amxmodx>
 #include <amxmisc>
 #include <hamsandwich>
+#include <cstrike>
 
 #define PLUGIN "ReBalance"
 #define VERSION "1.0"
@@ -83,28 +84,45 @@ public roundEnd() {
 }
 
 public CmdJoinTeam(id) {
-	if(!flagCheck(id,"a")) {
+	if(!flagCheck(id,"a"))
 		client_printc(id,"!g[!tFatality Family!g] Menjanje tima je zabranjeno.")
-		//client_print(id,print_chat,"%d %d %d %d",Players[id][kills], Players[id][deaths], Players[id][team], Players[id][score]); test
-		return PLUGIN_HANDLED;
-	}
-	else {
-		new args[16];
-		read_args(args, charsmax(args));
-		remove_quotes(args);
-		new newTeam = str_to_num(args);
-		new ar[32];
-		read_argv(0, ar, 32);
-		client_print(id, print_chat, "%d", newTeam);
-		client_print(id, print_chat, "%s", ar);
-		return PLUGIN_CONTINUE;
-	}
+	else
+		show_custom_team_menu(id);
+	return PLUGIN_HANDLED;
 }
 
-public jointeam(id) {
-	new arg[2]
-	read_argv(1,arg,1)
-	client_print(id, print_chat, "%d", str_to_num(arg));
+public show_custom_team_menu(id) {
+    new menu = menu_create("Select Your Team:", "team_menu_handler");
+
+    menu_additem(menu, "Terrorists", "1", 0);
+    menu_additem(menu, "Counter-Terrorists", "2", 0);
+
+    menu_setprop(menu, MPROP_EXIT, MEXIT_ALL);
+    menu_display(id, menu, 0);
+}
+
+public team_menu_handler(id, menu, item) {
+    if (item == MENU_EXIT) {
+        menu_destroy(menu);
+        return;
+    }
+
+    new info[3];
+    menu_item_getinfo(menu, item, _, info, charsmax(info), _, _, _);
+    
+    if(cs_get_user_defuse(id))
+	cs_set_user_defuse(id, 0);
+
+    new choice = str_to_num(info);
+    static jointeam[] = "jointeam";
+    static joinclass[] = "joinclass";
+    if(choice == 1)
+	engclient_cmd(id, jointeam, "1");
+    else if(choice == 2)
+	engclient_cmd(id, jointeam, "2");
+    engclient_cmd(id, joinclass, "5");
+    
+    menu_destroy(menu);
 }
 
 bool:flagCheck(id, flag[]) {
