@@ -30,9 +30,21 @@ public plugin_init() {
 	
 	register_event("SendAudio","round_end","a","2=%!MRAD_terwin","2=%!MRAD_ctwin","2=%!MRAD_rounddraw") // Round End
 	register_event("TeamInfo", "updateTeam", "a"); // Team Change
+	register_event("DeathMsg", "onDeath", "a"); // Kill
 	
 	for(new i = 0; i < 33; i++)
 		playerSetData(i, 0, 0, UNDEFINED, 0);
+}
+
+public onDeath() {
+	new killer = read_data(1);
+	new victim = read_data(2);
+
+	if (killer > 0 && killer <= 32 && killer != victim)
+		Players[killer][kills]++;
+
+	if (victim > 0 && victim <= 32)
+		Players[victim][deaths]++;
 }
 
 public updateTeam() {
