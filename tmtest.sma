@@ -16,8 +16,16 @@ public plugin_init() {
 	RegisterHookChain(RG_ShowVGUIMenu, "test2");
 	RegisterHookChain(RG_HandleMenu_ChooseAppearance, "test3");
 	RegisterHookChain(RG_HandleMenu_ChooseTeam, "test4");
+	
+	register_event("TeamInfo", "updateTeam", "a");
 }
 
+public updateTeam(){
+	new id = read_data(1)
+	new teamStr[2];
+	read_data(2, teamStr, charsmax(teamStr));
+	client_print(id, print_chat, "player id: %d, team: %s", id, teamStr);
+}
 public test1(id){
 	if(!flagCheck(id, "a")){
 		client_print(id,print_chat,"nemas pristup");
@@ -53,6 +61,3 @@ bool:flagCheck(id, flag[]) {
 		return true;
 	return false;
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
-*/
