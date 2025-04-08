@@ -40,12 +40,12 @@ public test2(id){
 	}
 }
 
-public test3(id){
-	client_print(id,print_chat,"appearance");
+public test3(id, const slot){
+	client_print(id,print_chat,"appearance: %s", slot);
 }
 
-public test4(id){
-	client_print(id,print_chat,"team");
+public test4(id, const MenuChooseTeam:slot){
+	client_print(id,print_chat,"team: %s", slot);
 }
 
 bool:flagCheck(id, flag[]) {
