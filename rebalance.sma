@@ -329,9 +329,7 @@ public ctmenu_handler(id, menu, item) {
 }
 
 bool:flagCheck(id, flag[]) {
-	if(get_user_flags(id) & read_flags(flag))
-		return true;
-	return false;
+	return (get_user_flags(id) & read_flags(flag)) != 0;
 }
 
 stock client_printc(const id, const input[]) {
