@@ -23,12 +23,23 @@ enum Player {
 	deaths,
 	team,
 	score
-}
+};
 
-new Players[33][Player]
-new canSwitchTeam[33]
-new numCTS
-new numTS
+enum Team {
+	num,
+	tscore,
+	streak,
+	wins
+};
+
+new Players[33][Player];
+new canSwitchTeam[33];
+
+new CT[Team];
+new TT[Team];
+
+// TODO: azurirati brojac na kraju/pocektu svake runde
+new current_round;
 
 public plugin_init() {
 	register_plugin(PLUGIN, VERSION, AUTHOR);
@@ -54,8 +65,8 @@ public plugin_init() {
 		playerSetData(i, 0, 0, UNDEFINED, 0);
 		canSwitchTeam[i] = 1;
 	}
-	numCTS = 0;
-	numTS = 0;
+	CT[num] = 0; CT[tscore] = 0; CT[streak] = 0; CT[wins] = 0;
+	TT[num] = 0; TT[tscore] = 0; TT[streak] = 0; TT[wins] = 0;
 }
 
 public cmdtransfer(id) {
@@ -83,15 +94,15 @@ public transferPlayer(id, playerTeam, playerClass) {
 	msg_block = get_msg_block(menu_msgid);
 	set_msg_block(menu_msgid, BLOCK_SET);
 	
-	if(playerTeam == 1 || (playerTeam == 5 && numTS < numCTS)) {
+	if(playerTeam == 1 || (playerTeam == 5 && TT[num] < CT[num])) {
 		cs_set_user_team(id, CS_TEAM_T, playerClass,true);
 		Players[id][team] = TS;
-		numTS++;
+		TT[num]++;
 	}
-	else if(playerTeam == 2 || (playerTeam == 5 && numCTS <= numTS)) {
+	else if(playerTeam == 2 || (playerTeam == 5 && CT[num] <= TT[num])) {
 		cs_set_user_team(id, CS_TEAM_CT, playerClass,true);
 		Players[id][team] = CTS;
-		numCTS++;
+		CT[num]++;
 	}
 	else {
 		cs_set_user_team(id, CS_TEAM_SPECTATOR, 0,true);
@@ -122,7 +133,7 @@ public onSpawn(id) {
 public new_round() {
 	for(new i = 1; i < 33; i++)
 		canSwitchTeam[i] = 1;
-	client_print(0, print_chat, "CTS: %d,  TS: %d", numCTS, numTS);
+	client_print(0, print_chat, "CTS: %d,  TS: %d", CT[num], TT[num]);
 }
 
 public updateTeam() {
@@ -132,9 +143,9 @@ public updateTeam() {
 	//client_print(id, print_chat, "%d %s", id, teamStr);
 	//client_print(id, print_chat, "%d %d", id, Players[id][team]);
 	if(Players[id][team] == TS)
-		numTS--;
+		TT[num]--;
 	else if(Players[id][team] == CTS)
-		numCTS--;
+		CT[num]--;
 	switch(teamStr[0]) {
 		case 'T': Players[id][team] = TS;
 		case 'C': Players[id][team] = CTS;
@@ -142,9 +153,9 @@ public updateTeam() {
 		default: Players[id][team] = UNASSIGNED;
 	}
 	if(Players[id][team] == TS)
-		numTS++;
+		TT[num]++;
 	else if(Players[id][team] == CTS)
-		numCTS++;
+		CT[num]++;
 	//client_print(id, print_chat, "%d %d", id, Players[id][team]);
 }
 
@@ -197,7 +208,7 @@ public team_menu_handler(id, menu, item) {
 	
 	new choice = str_to_num(info);
 	if(choice == 1) {
-		if(Players[id][team] == TS || numTS < numCTS || numTS == 0) {
+		if(Players[id][team] == TS || TT[num] < CT[num] || TT[num] == 0) {
 			create_tmenu(id);
 		} else {
 			client_printc(id, "!g[!tFatality Family!g] Previse igraca u timu!");
@@ -206,7 +217,7 @@ public team_menu_handler(id, menu, item) {
 		}
 	}
 	else if(choice == 2) {
-		if(Players[id][team] == CTS || numCTS < numTS || numCTS == 0) {
+		if(Players[id][team] == CTS || CT[num] < TT[num] || CT[num] == 0) {
 			create_ctmenu(id);
 		} else {
 			client_printc(id, "!g[!tFatality Family!g] Previse igraca u timu!");
@@ -362,9 +373,9 @@ public client_authorized(id) {
 
 public client_disconnected(id) {
 	if(Players[id][team] == CTS)
-		numCTS--;
+		CT[num]--;
 	else if(Players[id][team] == TS)
-		numTS--;
+		TT[num]--;
 	playerSetData(id, 0, 0, UNDEFINED, 0);
 	canSwitchTeam[id] = 1;
 }
@@ -384,6 +395,67 @@ public client_death(killer, victim, wpnindex) {
 			Players[victim][deaths]++;
 	}		
 }
+
+/*
+
+		BALANCE
+		
+*/
+
+// TODO: povezati funkciju na roundEnd
+public balanceByNumber() {
+	while(abs(CT[num] - TT[num]) > 1) {
+		// TODO: u tim sa manje igraca prebaciti najlosijeg igraca suprotnog tima
+	}
+	client_print(0, print_chat, "Broj igraca je izbalansiran!");
+	balanceByScore();
+}
+
+public balanceByScore() {
+	if(current_round < 3) {
+		client_print(0, print_chat, "Ne balansiram skor u pocetnim rundama!");
+		return;
+	}
+
+	CT[tscore] = 0; TT[tscore] = 0;
+	for(new i = 1; i < 33; i++)
+		if(Players[i][team] == CTS)
+			CT[tscore] += Players[i][score];
+		else
+			TT[tscore] += Players[i][score];
+	CT[tscore] /= CT[num]; TT[tscore] /= TT[num];
+	client_print(0, print_chat, "Tim skorovi su azurirani!");
+
+	if(CT[streak] > 3) {
+		// TODO: prebaciti dobrog CT igraca u TT, losijeg TT igraca u CT
+		client_print(0, print_chat, "Menjam igrace jer CT ima veliki streak!");
+		return;
+	}
+
+	if(TT[streak] > 3) {
+		// TODO: prebaciti dobrog TT igraca u CT, losijeg CT igraca u TT
+		client_print(0, print_chat, "Menjam igrace jer TT ima veliki streak!");
+		return;
+	}
+
+	if(CT[wins] != TT[wins]) {
+		if(TT[tscore] > 1.05*CT[tscore]) {
+			// TODO: prebaciti dobrog TT igraca u CT, losijeg CT igraca u TT
+			client_print(0, print_chat, "Menjam igrace jer TT ima veci skor!");
+		}
+		else if(CT[tscore] > 1.05*TT[tscore]) {
+			// TODO: prebaciti dobrog CT igraca u TT, losijeg TT igraca u CT
+			client_print(0, print_chat, "Menjam igrace jer CT ima veci skor!");
+		}
+		else {
+			// TODO: zameniti dva igraca iste jacine
+			client_print(0, print_chat, "Menjam igrace jer timovi imaju slican skor!");
+		}
+	}
+	return;
+}
+
+
 
 /*
 
@@ -448,6 +520,3 @@ stock force_team_join(id, menu_msgid, /* const */ class[] = "0") {
 	engclient_cmd(id, joinclass,"5")
 	set_msg_block(menu_msgid, msg_block)
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
-*/
