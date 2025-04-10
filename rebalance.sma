@@ -419,7 +419,7 @@ public balanceByScore() {
 	for(new i = 1; i < 33; i++)
 		if(Players[i][team] == CTS)
 			CT[tscore] += Players[i][score];
-		else
+		else if(Players[i][team] == TS)
 			TT[tscore] += Players[i][score];
 	CT[tscore] /= CT[num]; TT[tscore] /= TT[num];
 	client_print(0, print_chat, "Tim skorovi su azurirani!");
@@ -439,11 +439,11 @@ public balanceByScore() {
 	if(CT[wins] != TT[wins]) {
 		if(TT[tscore] > 1.05*CT[tscore]) {
 			// TODO: prebaciti dobrog TT igraca u CT, losijeg CT igraca u TT
-			client_print(0, print_chat, "Menjam igrace jer TT ima veci skor!");
+			client_print(0, print_chat, "Menjam igrace jer TT ima bolji skor!");
 		}
 		else if(CT[tscore] > 1.05*TT[tscore]) {
 			// TODO: prebaciti dobrog CT igraca u TT, losijeg TT igraca u CT
-			client_print(0, print_chat, "Menjam igrace jer CT ima veci skor!");
+			client_print(0, print_chat, "Menjam igrace jer CT ima bolji skor!");
 		}
 		else {
 			// TODO: zameniti dva igraca iste jacine
@@ -452,8 +452,6 @@ public balanceByScore() {
 	}
 	return;
 }
-
-
 
 /*
 
@@ -518,3 +516,6 @@ stock force_team_join(id, menu_msgid, /* const */ class[] = "0") {
 	engclient_cmd(id, joinclass,"5")
 	set_msg_block(menu_msgid, msg_block)
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
+*/
