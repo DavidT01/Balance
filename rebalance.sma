@@ -448,3 +448,6 @@ stock force_team_join(id, menu_msgid, /* const */ class[] = "0") {
 	engclient_cmd(id, joinclass,"5")
 	set_msg_block(menu_msgid, msg_block)
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
+*/
