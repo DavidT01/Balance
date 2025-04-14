@@ -24,6 +24,7 @@
 enum Player {
 	kills,
 	deaths,
+	multikill_count,
 	team,
 	score,
 	imm,
@@ -70,6 +71,7 @@ public plugin_init() {
 		canSwitchTeam[i] = 1;
 		Players[i][imm] = 0;
 		Players[i][last_transfer] = 0;
+		Players[i][multikill_count] = 0;
 	}
 	CT[num] = 0; CT[tscore] = 0; CT[streak] = 0; CT[wins] = 0;
 	TT[num] = 0; TT[tscore] = 0; TT[streak] = 0; TT[wins] = 0;
@@ -193,17 +195,22 @@ public on_death() {
 	new killer = read_data(1);
 	new victim = read_data(2);
 
-	if (killer > 0 && killer <= 32 && killer != victim)
+	if (killer > 0 && killer <= 32 && killer != victim) {
 		Players[killer][kills]++;
+		Players[killer][multikill_count]++;
+	}
 
 	if (victim > 0 && victim <= 32)
 		Players[victim][deaths]++;
 }
 
 public round_start() {
-	for(new i = 1; i < 33; i++)
-		if(Players[i][imm] == 1)
+	for(new i = 1; i < 33; i++) {
+		Players[i][multikill_count] = 0;
+		if(Players[i][imm] == 1) {
 			canSwitchTeam[i] = 1;
+		}
+	}
 	client_print(0, print_chat, "CTS: %d, TS: %d", CT[num], TT[num]);
 }
 
@@ -273,6 +280,7 @@ public client_authorized(id) {
 	playerSetData(id, 0, 0, UNASSIGNED, 0);
 	canSwitchTeam[id] = 1;
 	Players[id][last_transfer] = 0;
+	Players[id][multikill_count] = 0;
 	if(flagCheck(id, "a"))
 		Players[id][imm] = 1;
 }
@@ -285,6 +293,7 @@ public client_disconnected(id) {
 	playerSetData(id, 0, 0, UNDEFINED, 0);
 	canSwitchTeam[id] = 1;
 	Players[id][last_transfer] = 0;
+	Players[id][multikill_count] = 0;
 	Players[id][imm] = 0;
 }
 
@@ -296,19 +305,22 @@ public client_death(killer, victim, wpnindex) {
 		
 		//client_print(0, print_chat, "killer: [%d] %s, victim: [%d] %s", killer, killerName, victim, victimName);
 		
-		if (killer > 0 && killer <= 32 && killer != victim)
+		if (killer > 0 && killer <= 32 && killer != victim) {
 			Players[killer][kills]++;
+			Players[killer][multikill_count]++;
+		}
 		if (victim > 0 && victim <= 32)
 			Players[victim][deaths]++;
 	}
 }
 
-// TODO: nova formula
+// score = kills - 0.5*deaths + multikill
 public update_player_score(id) {
-	if(Players[id][deaths] != 0)
-		Players[id][score] = Players[id][kills] / Players[id][deaths];
-	else
-		Players[id][score] = Players[id][kills];
+	Players[id][score] = Players[id][kills] - 0.5*Players[id][deaths];
+	if(Players[id][multikill_count] > 5)
+		Players[id][score] += 4;
+	else if(Players[id][multikill_count] > 2)
+		Players[id][score] += 2;
 }
 
 /*
@@ -534,3 +546,6 @@ stock client_printc(const id, const input[]) {
 			message_end();
 		}
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
+*/
