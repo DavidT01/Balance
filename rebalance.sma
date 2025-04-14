@@ -51,10 +51,10 @@ public plugin_init() {
 	// Default Menus
 	register_message(get_user_msgid("ShowMenu"), "message_show_menu");
 	register_message(get_user_msgid("VGUIMenu"), "message_vgui_menu");
-	RegisterHookChain(RG_ShowMenu, "OldMenu_hook");
-	RegisterHookChain(RG_ShowVGUIMenu, "VGUIMenu_hook");
-	RegisterHookChain(RG_HandleMenu_ChooseTeam, "jointeam_hook");
-	RegisterHookChain(RG_HandleMenu_ChooseAppearance, "joinclass_hook");
+	RegisterHookChain(RG_ShowMenu, "OldMenu_hook", false);
+	RegisterHookChain(RG_ShowVGUIMenu, "VGUIMenu_hook",false);
+	RegisterHookChain(RG_HandleMenu_ChooseTeam, "ChooseTeam_hook", true);
+	RegisterHookChain(RG_HandleMenu_ChooseAppearance, "ChooseAppearance_hook", false);
 	
 	register_clcmd("chooseteam", "block_chooseteam");
 	register_clcmd("jointeam", "block_jointeam")
@@ -79,7 +79,7 @@ public block_chooseteam(id) {
 }
 
 public block_jointeam(id) {
-	
+	return PLUGIN_CONTINUE;
 }
 
 public transfer_cmd(id) {
@@ -143,9 +143,10 @@ public VGUIMenu_hook(id, VGUIMenu:menuType) {
 	}
 }
 
-public jointeam_hook(id, slot) {
+public ChooseTeam_hook(const id, const MenuChooseTeam:slot) {
 	if(Players[id][imm] == 0 && canSwitchTeam[id] == 0) {
 		client_printc(id, "!gMenjanje tima je zabranjeno 6");
+		SetHookChainArg(2, ATYPE_INTEGER, 0);
 		return HC_SUPERCEDE;
 	}
 	else if(Players[id][imm] == 0 && canSwitchTeam[id] == 1) {
@@ -154,15 +155,67 @@ public jointeam_hook(id, slot) {
 	else {
 		if(canSwitchTeam[id] == 0) {
 			client_printc(id, "!gMenjanje tima je zabranjeno 7");
+			SetHookChainArg(2, ATYPE_INTEGER, 0);
 			return HC_SUPERCEDE;
 		}
 		else {
-			return HC_CONTINUE;
+			
+			SetHookChainReturn(ATYPE_INTEGER, 1);
+			return HC_SUPERCEDE;
+			/*switch(slot) {
+				case MenuChoose_T: {
+					if(TT[num] > CT[num]) {
+						client_printc(id, "!gPrevise igraca u terorima.");
+						SetHookChainArg(2, ATYPE_INTEGER, 0);
+						return HC_SUPERCEDE;
+					}
+					else {
+						SetHookChainArg(2, ATYPE_INTEGER, MenuChooseTeam:MenuChoose_T);
+						return HC_SUPERCEDE;
+					}
+				}
+				case MenuChoose_CT: {
+					if(CT[num] > TT[num]) {
+						client_printc(id, "!gPrevise igraca u kanterima.");
+						SetHookChainArg(2, ATYPE_INTEGER, 0);
+						return HC_SUPERCEDE;
+					}
+					else {
+						SetHookChainArg(2, ATYPE_INTEGER, MenuChooseTeam:MenuChoose_CT);
+						return HC_SUPERCEDE;
+					}
+				}
+				case MenuChoose_Spec: {
+					if(is_user_alive(id)) {
+						client_printc(id, "!gNe mozes uci u spec dok si ziv.");
+						SetHookChainArg(2, ATYPE_INTEGER, 0);
+						return HC_SUPERCEDE;
+					}
+					else {
+						SetHookChainArg(2, ATYPE_INTEGER, MenuChooseTeam:MenuChoose_Spec);
+						return HC_SUPERCEDE;
+					}
+				}
+				case MenuChoose_AutoSelect: {
+					if(CT[num] >= TT[num]) {
+						SetHookChainArg(2, ATYPE_INTEGER, MenuChooseTeam:MenuChoose_CT);
+						return HC_SUPERCEDE;
+					}
+					else {
+						SetHookChainArg(2, ATYPE_INTEGER, MenuChooseTeam:MenuChoose_T);
+						return HC_SUPERCEDE;
+					}
+				}
+				default: {
+					return HC_CONTINUE;
+				}
+			}*/
 		}
 	}
 }
 
-public joinclass_hook(id) {
+public ChooseAppearance_hook(id) {
+	client_print(id, print_console, "CT: %d TT: %d", CT[num], TT[num]);
 	if(Players[id][imm] == 0 && canSwitchTeam[id] == 0) {
 		client_printc(id, "!gMenjanje tima je zabranjeno 8");
 		return HC_SUPERCEDE;
@@ -198,7 +251,6 @@ public round_start() {
 	for(new i = 1; i < 33; i++)
 		if(Players[i][imm] == 1)
 			canSwitchTeam[i] = 1;
-	client_print(0, print_chat, "%d", current_round);
 }
 
 public round_restart() {
