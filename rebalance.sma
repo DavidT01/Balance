@@ -4,6 +4,7 @@
 #include <cstrike>
 #include <fakemeta>
 #include <reapi>
+#include <csx>
 
 #define PLUGIN "ReBalance"
 #define VERSION "1.0"
@@ -25,6 +26,7 @@ enum Player {
 	kills,
 	deaths,
 	multikill_count,
+	bomb,
 	team,
 	score,
 	imm,
@@ -72,6 +74,7 @@ public plugin_init() {
 		Players[i][imm] = 0;
 		Players[i][last_transfer] = 0;
 		Players[i][multikill_count] = 0;
+		Players[i][bomb] = 0;
 	}
 	CT[num] = 0; CT[tscore] = 0; CT[streak] = 0; CT[wins] = 0;
 	TT[num] = 0; TT[tscore] = 0; TT[streak] = 0; TT[wins] = 0;
@@ -207,6 +210,7 @@ public on_death() {
 public round_start() {
 	for(new i = 1; i < 33; i++) {
 		Players[i][multikill_count] = 0;
+		Players[i][bomb] = 0;
 		if(Players[i][imm] == 1) {
 			canSwitchTeam[i] = 1;
 		}
@@ -228,6 +232,14 @@ public TT_win() {
 	client_printc(0, "TT won");
 	TT[wins]++;
 	CT[streak] = 0;
+}
+
+public bomb_planted(id) {
+    Players[id][bomb] = 1;
+}
+
+public bomb_defused(id) {
+    Players[id][bomb] = 1;
 }
 
 public update_team() {
@@ -281,6 +293,7 @@ public client_authorized(id) {
 	canSwitchTeam[id] = 1;
 	Players[id][last_transfer] = 0;
 	Players[id][multikill_count] = 0;
+	Players[id][bomb] = 0;
 	if(flagCheck(id, "a"))
 		Players[id][imm] = 1;
 }
@@ -294,6 +307,7 @@ public client_disconnected(id) {
 	canSwitchTeam[id] = 1;
 	Players[id][last_transfer] = 0;
 	Players[id][multikill_count] = 0;
+	Players[id][bomb] = 0;
 	Players[id][imm] = 0;
 }
 
