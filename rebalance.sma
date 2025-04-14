@@ -23,8 +23,6 @@
 #define SWITCH_FREQ 7
 
 enum Player {
-	kills,
-	deaths,
 	multikill_count,
 	bomb,
 	team,
@@ -69,7 +67,7 @@ public plugin_init() {
 	register_clcmd("amx_transfer", "transfer_cmd");
 	
 	for(new i = 0; i < 33; i++) {
-		playerSetData(i, 0, 0, UNDEFINED, 0);
+		set_player_data(i, UNDEFINED, 0);
 		canSwitchTeam[i] = 1;
 		Players[i][imm] = 0;
 		Players[i][last_transfer] = 0;
@@ -199,12 +197,12 @@ public on_death() {
 	new victim = read_data(2);
 
 	if (killer > 0 && killer <= 32 && killer != victim) {
-		Players[killer][kills]++;
+		Players[killer][score]++;
 		Players[killer][multikill_count]++;
 	}
 
 	if (victim > 0 && victim <= 32)
-		Players[victim][deaths]++;
+		Players[victim][score] -= 0.5;
 }
 
 public round_start() {
@@ -281,15 +279,13 @@ public round_end() {
 	set_task(2.5, "balance_number");
 }
 
-public playerSetData(id, k, d, t, s) {
-	Players[id][kills] = k;
-	Players[id][deaths] = d;
+public set_player_data(id, t, s) {
 	Players[id][team] = t;
 	Players[id][score] = s;
 }
 
 public client_authorized(id) {
-	playerSetData(id, 0, 0, UNASSIGNED, 0);
+	set_player_data(id, UNASSIGNED, 0);
 	canSwitchTeam[id] = 1;
 	Players[id][last_transfer] = 0;
 	Players[id][multikill_count] = 0;
@@ -303,7 +299,7 @@ public client_disconnected(id) {
 		CT[num]--;
 	else if(Players[id][team] == TS)
 		TT[num]--;
-	playerSetData(id, 0, 0, UNDEFINED, 0);
+	set_player_data(id, UNDEFINED, 0);
 	canSwitchTeam[id] = 1;
 	Players[id][last_transfer] = 0;
 	Players[id][multikill_count] = 0;
@@ -320,20 +316,21 @@ public client_death(killer, victim, wpnindex) {
 		//client_print(0, print_chat, "killer: [%d] %s, victim: [%d] %s", killer, killerName, victim, victimName);
 		
 		if (killer > 0 && killer <= 32 && killer != victim) {
-			Players[killer][kills]++;
+			Players[killer][score]++;
 			Players[killer][multikill_count]++;
 		}
 		if (victim > 0 && victim <= 32)
-			Players[victim][deaths]++;
+			Players[victim][score] -= 0.5;
 	}
 }
 
-// score = kills - 0.5*deaths + multikill
 public update_player_score(id) {
-	Players[id][score] = Players[id][kills] - 0.5*Players[id][deaths];
 	if(Players[id][multikill_count] > 5)
 		Players[id][score] += 4;
 	else if(Players[id][multikill_count] > 2)
+		Players[id][score] += 2;
+		
+	if(Players[id][bomb])
 		Players[id][score] += 2;
 }
 
