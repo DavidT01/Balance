@@ -22,6 +22,8 @@
 
 #define SWITCH_FREQ 7
 
+#define max(%1,%2) ((%1) > (%2) ? (%1) : (%2))
+
 enum Player {
 	multikill_count,
 	bomb,
@@ -227,7 +229,7 @@ public round_restart() {
 
 public on_damage_taken(victim, inflictor, attacker, Float:dmg, damagebits) {
 	if (1 <= attacker <= 32 && attacker != victim)
-		Players[attacker][damage] += dmg;
+		Players[attacker][damage] += max(dmg, get_user_health(victim));
 }
 
 public CT_win() {
@@ -592,6 +594,3 @@ stock print_switch(id1, id2) {
 	format(text, 255, "!g[!tFatality Family!g] !t%s !gi !t%s !g su zamenjeni!", name1, name2);
 	client_printc(0, text);
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
-*/
