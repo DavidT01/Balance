@@ -22,12 +22,13 @@
 
 #define SWITCH_FREQ 7
 
-#define max(%1,%2) ((%1) > (%2) ? (%1) : (%2))
+#define min(%1,%2) ((%1) <= (%2) ? (%1) : (%2))
 
 enum Player {
 	multikill_count,
 	bomb,
 	damage,
+	hp,
 	team,
 	score,
 	imm,
@@ -79,6 +80,7 @@ public plugin_init() {
 		Players[i][multikill_count] = 0;
 		Players[i][bomb] = 0;
 		Players[i][damage] = 0;
+		Players[i][hp] = 0;
 	}
 	CT[num] = 0; CT[tscore] = 0; CT[streak] = 0; CT[wins] = 0;
 	TT[num] = 0; TT[tscore] = 0; TT[streak] = 0; TT[wins] = 0;
@@ -216,20 +218,24 @@ public round_start() {
 		Players[i][multikill_count] = 0;
 		Players[i][bomb] = 0;
 		Players[i][damage] = 0;
+		Players[i][hp] = 100;
 		if(Players[i][imm] == 1) {
 			canSwitchTeam[i] = 1;
 		}
 	}
-	client_print(0, print_chat, "CTS: %d, TS: %d", CT[num], TT[num]);
+	//client_print(0, print_chat, "CTS: %d, TS: %d", CT[num], TT[num]);
 }
 
 public round_restart() {
 	current_round = 1;
 }
 
-public on_damage_taken(victim, inflictor, attacker, Float:dmg, damagebits) {
-	if (1 <= attacker <= 32 && attacker != victim)
-		Players[attacker][damage] += max(dmg, get_user_health(victim));
+public on_damage_taken(victim, inflictor, attacker, dmg, damagebits) {
+	if (1 <= attacker <= 32 && attacker != victim) {
+		new tmp = min(dmg, Players[victim][hp]);
+		Players[victim][hp] -= tmp;
+		Players[attacker][damage] += tmp;
+	}
 }
 
 public CT_win() {
@@ -303,6 +309,7 @@ public client_authorized(id) {
 	Players[id][multikill_count] = 0;
 	Players[id][bomb] = 0;
 	Players[id][damage] = 0;
+	Players[id][hp] = 0;
 	if(flagCheck(id, "a"))
 		Players[id][imm] = 1;
 }
@@ -319,6 +326,7 @@ public client_disconnected(id) {
 	Players[id][bomb] = 0;
 	Players[id][imm] = 0;
 	Players[id][damage] = 0;
+	Players[id][hp] = 0;
 }
 
 public client_death(killer, victim, wpnindex) {
@@ -390,7 +398,7 @@ public fix_team_numbering() {
 
 public balance_score() {
 	if(current_round < 3) {
-		client_print(0, print_chat, "Ne balansiram skor u %d. rundi!", current_round);
+		//client_print(0, print_chat, "Ne balansiram skor u %d. rundi!", current_round);
 		current_round++;
 		return;
 	}
@@ -408,26 +416,24 @@ public balance_score() {
 
 	current_round++;
 
-	if(CT_cand_num != 0 && TT_cand_num != 0)
-		client_print(0, print_chat, "Pronadjeni su kandidati za transfer!");
-	else {
+	if(CT_cand_num == 0 || TT_cand_num == 0) {
 		client_print(0, print_chat, "Nisu pronadjeni kandidati za transfer!");
 		return;
 	}
 
 	if(CT[streak] > 3) {
-		client_print(0, print_chat, "CT streak previsok, izvrsavam transfer!");
+		//client_print(0, print_chat, "CT streak previsok, izvrsavam transfer!");
 		find_switch(CT_candidates, TT_candidates, CT_cand_num, TT_cand_num);
 		return;
 	}
 	else if(TT[streak] > 3) {
-		client_print(0, print_chat, "TT streak previsok, izvrsavam transfer!");
+		//client_print(0, print_chat, "TT streak previsok, izvrsavam transfer!");
 		find_switch(CT_candidates, TT_candidates, CT_cand_num, TT_cand_num);
 		return;
 	}
 
 	if(CT[wins] != TT[wins] && (TT[tscore] > 1.05*CT[tscore] || CT[tscore] > 1.05*TT[tscore])) {
-		client_print(0, print_chat, "Razlika u skorovima veca od 5%, izvrsavam transfer!");
+		//client_print(0, print_chat, "Razlika u skorovima veca od 5%, izvrsavam transfer!");
 		find_switch(CT_candidates, TT_candidates, CT_cand_num, TT_cand_num);
 	}
 	return;
