@@ -32,7 +32,8 @@ enum Player {
 	team,
 	score,
 	imm,
-	last_transfer
+	last_transfer,
+	can_switch
 };
 
 enum Team {
@@ -43,7 +44,6 @@ enum Team {
 };
 
 new Players[33][Player];
-new canSwitchTeam[33];
 new CT[Team], TT[Team];
 new current_round;
 
@@ -55,149 +55,27 @@ public plugin_init() {
 	register_event("TextMsg", "round_restart", "a", "2&#Game_C", "2&#Game_w"); // Round Restart
 	register_event("TeamInfo", "update_team", "a"); // Team Change
 	register_event("DeathMsg", "on_death", "a"); // Player Death
+
 	register_logevent("CT_win", 6, "3=CTs_Win", "3=All_Hostages_Rescued") // CT Win
 	register_logevent("TT_win" , 6, "3=Terrorists_Win", "3=Target_Bombed") // TT Win
 	
-	RegisterHam(Ham_TakeDamage, "player", "on_damage_taken", true); // Damage Tracking
+	RegisterHam(Ham_TakeDamage, "player", "damage_taken", true); // Damage Tracking
 	
 	// Default Menus
 	register_message(get_user_msgid("ShowMenu"), "message_show_menu");
 	register_message(get_user_msgid("VGUIMenu"), "message_vgui_menu");
-	RegisterHookChain(RG_ShowMenu, "OldMenu_hook");
-	RegisterHookChain(RG_ShowVGUIMenu, "VGUIMenu_hook");
-	RegisterHookChain(RG_HandleMenu_ChooseTeam, "jointeam_hook");
-	RegisterHookChain(RG_HandleMenu_ChooseAppearance, "joinclass_hook");
 	
-	register_clcmd("chooseteam", "block_chooseteam");
-	register_clcmd("jointeam", "block_jointeam")
-	register_clcmd("amx_transfer", "transfer_cmd");
+	// jointeam & chooseteam
+	register_clcmd("jointeam", "cmd_jointeam");
+	register_clcmd("chooseteam", "cmd_jointeam");
 	
 	for(new i = 0; i < 33; i++) {
-		set_player_data(i, UNDEFINED, 0);
-		canSwitchTeam[i] = 1;
+		set_player_data(i, UNDEFINED, 0, 0, 0, 0, 0, 0, 1);
 		Players[i][imm] = 0;
-		Players[i][last_transfer] = 0;
-		Players[i][multikill_count] = 0;
-		Players[i][bomb] = 0;
-		Players[i][damage] = 0;
-		Players[i][hp] = 0;
 	}
 	CT[num] = 0; CT[tscore] = 0; CT[streak] = 0; CT[wins] = 0;
 	TT[num] = 0; TT[tscore] = 0; TT[streak] = 0; TT[wins] = 0;
 	current_round = 0;
-}
-
-public block_chooseteam(id) {
-	if(canSwitchTeam[id] == 0) {
-		client_printc(id, "!gMenjanje tima je zabranjeno 1");
-		return PLUGIN_HANDLED;
-	}
-	else return PLUGIN_CONTINUE;
-}
-
-public block_jointeam(id) {
-	
-}
-
-public transfer_cmd(id) {
-	new ac = read_argc();
-	if(ac != 2) {
-		client_print(id, print_console, "Greska.");
-		return PLUGIN_HANDLED;
-	}
-
-	new argv[32], arg;
-	read_argv(1, argv, sizeof(argv));
-	arg = str_to_num(argv);
-
-	if(arg > 0 && arg < 4) {
-		change_player_team(id, arg);
-		return PLUGIN_HANDLED;
-	}
-	else {
-		client_print(id, print_console, "Greska.");
-		return PLUGIN_HANDLED;
-	}
-}
-
-public OldMenu_hook(id, const bitsSlots, const iDisplayTime, const iNeedMore, pszText[]) {
-	if(containi(pszText, "Team") != -1 || containi(pszText, "Select") != -1) {
-		if(Players[id][imm] == 0 && canSwitchTeam[id] == 0) {
-			client_printc(id, "!gMenjanje tima je zabranjeno 2");
-			return HC_SUPERCEDE;
-		}
-		else if(Players[id][imm] == 0 && canSwitchTeam[id] == 1) {
-			return HC_CONTINUE;
-		}
-		else {
-			if(canSwitchTeam[id] == 0) {
-				client_printc(id, "!gMenjanje tima je zabranjeno 3");
-				return HC_SUPERCEDE;
-			}
-			else return HC_CONTINUE;
-		}
-	}
-	else return HC_CONTINUE;
-}
-
-public VGUIMenu_hook(id, VGUIMenu:menuType) {
-	if(menuType != VGUIMenu:TEAM_SELECT_VGUI_MENU_ID)
-		return HC_CONTINUE;
-
-	if(Players[id][imm] == 0  && canSwitchTeam[id] == 0) {
-		client_printc(id, "!gMenjanje tima je zabranjeno 4");
-		return HC_SUPERCEDE;
-	}
-	else if(Players[id][imm] == 0 && canSwitchTeam[id] == 1) {
-		return HC_CONTINUE;
-	}
-	else {
-		if(canSwitchTeam[id] == 0) {
-			client_printc(id, "!gMenjanje tima je zabranjeno 5");
-			return HC_SUPERCEDE;
-		}
-		else return HC_CONTINUE;
-	}
-}
-
-public jointeam_hook(id, slot) {
-	if(Players[id][imm] == 0 && canSwitchTeam[id] == 0) {
-		client_printc(id, "!gMenjanje tima je zabranjeno 6");
-		return HC_SUPERCEDE;
-	}
-	else if(Players[id][imm] == 0 && canSwitchTeam[id] == 1) {
-		return HC_CONTINUE;
-	}
-	else {
-		if(canSwitchTeam[id] == 0) {
-			client_printc(id, "!gMenjanje tima je zabranjeno 7");
-			return HC_SUPERCEDE;
-		}
-		else {
-			return HC_CONTINUE;
-		}
-	}
-}
-
-public joinclass_hook(id) {
-	if(Players[id][imm] == 0 && canSwitchTeam[id] == 0) {
-		client_printc(id, "!gMenjanje tima je zabranjeno 8");
-		return HC_SUPERCEDE;
-	}
-	else if(Players[id][imm] == 0 && canSwitchTeam[id] == 1) {
-		canSwitchTeam[id] = 0;
-		return HC_CONTINUE;
-	}
-	else {
-		if(canSwitchTeam[id] == 0) {
-			client_printc(id, "!gMenjanje tima je zabranjeno 9");
-			return HC_SUPERCEDE;
-		}
-		else {
-			canSwitchTeam[id] = 0;
-			return HC_CONTINUE;
-		}
-	}
 }
 
 public on_death() {
@@ -219,9 +97,8 @@ public round_start() {
 		Players[i][bomb] = 0;
 		Players[i][damage] = 0;
 		Players[i][hp] = 100;
-		if(Players[i][imm] == 1) {
-			canSwitchTeam[i] = 1;
-		}
+		if(Players[i][imm] == 1)
+			Players[i][can_switch] = 1;
 	}
 	//client_print(0, print_chat, "CTS: %d, TS: %d", CT[num], TT[num]);
 }
@@ -230,7 +107,7 @@ public round_restart() {
 	current_round = 1;
 }
 
-public on_damage_taken(victim, inflictor, attacker, dmg, damagebits) {
+public damage_taken(victim, inflictor, attacker, dmg, damagebits) {
 	if (1 <= attacker <= 32 && attacker != victim) {
 		new tmp = min(dmg, Players[victim][hp]);
 		Players[victim][hp] -= tmp;
@@ -297,19 +174,8 @@ public round_end() {
 	set_task(2.5, "balance_number");
 }
 
-public set_player_data(id, t, s) {
-	Players[id][team] = t;
-	Players[id][score] = s;
-}
-
 public client_authorized(id) {
-	set_player_data(id, UNASSIGNED, 0);
-	canSwitchTeam[id] = 1;
-	Players[id][last_transfer] = 0;
-	Players[id][multikill_count] = 0;
-	Players[id][bomb] = 0;
-	Players[id][damage] = 0;
-	Players[id][hp] = 0;
+	set_player_data(id, UNASSIGNED, 0, 0, 0, 0, 0, 0, 1);
 	if(flagCheck(id, "a"))
 		Players[id][imm] = 1;
 }
@@ -319,14 +185,8 @@ public client_disconnected(id) {
 		CT[num]--;
 	else if(Players[id][team] == TS)
 		TT[num]--;
-	set_player_data(id, UNDEFINED, 0);
-	canSwitchTeam[id] = 1;
-	Players[id][last_transfer] = 0;
-	Players[id][multikill_count] = 0;
-	Players[id][bomb] = 0;
+	set_player_data(id, UNDEFINED, 0, 0, 0, 0, 0, 0, 1);
 	Players[id][imm] = 0;
-	Players[id][damage] = 0;
-	Players[id][hp] = 0;
 }
 
 public client_death(killer, victim, wpnindex) {
@@ -340,17 +200,173 @@ public client_death(killer, victim, wpnindex) {
 	}
 }
 
-public update_player_score(id) {
-	if(Players[id][multikill_count] > 5)
-		Players[id][score] += 4;
-	else if(Players[id][multikill_count] > 2)
-		Players[id][score] += 2;
-		
-	if(Players[id][bomb])
-		Players[id][score] += 2;
-		
-	if(Players[id][damage] >= 300)
-		Players[id][score] += 2;
+/*
+
+		CUSTOM TEAMMENU
+
+*/
+
+public cmd_jointeam(id) {
+	if(!flagCheck(id,"a"))
+		client_printc(id,"!g[!tFatality Family!g] Menjanje tima je zabranjeno.")
+	else {
+		if(Players[id][can_switch])
+			create_team_menu(id);
+		else
+			client_printc(id, "!g[!tFatality Family!g] Ne mozes ponovo promeniti tim.");
+	}
+	return PLUGIN_HANDLED;
+}
+
+public create_team_menu(id) {
+	new menu = menu_create("Select a team", "team_menu_handler");
+
+	menu_additem(menu, "Terrorist Force", "1", 0);
+	menu_additem(menu, "Counter-Terrorist Force", "2", 0);
+	menu_addblank2(menu);
+	menu_addblank2(menu);
+	menu_additem(menu, "Auto-Join", "5", 0);
+	menu_additem(menu, "Spectator", "6", 0); 
+
+	menu_setprop(menu, MPROP_EXIT, MEXIT_ALL);
+	menu_display(id, menu, 0);
+}
+
+public team_menu_handler(id, menu, item) {
+	if (item == MENU_EXIT) {
+		menu_destroy(menu);
+		return;
+	}
+
+	new info[3];
+	menu_item_getinfo(menu, item, _, info, charsmax(info), _, _, _);
+    
+	if(cs_get_user_defuse(id))
+		cs_set_user_defuse(id, 0);
+	
+	static jointeam[] = "jointeam";
+	static joinclass[] = "joinclass";
+	
+	new choice = str_to_num(info);
+	if(choice == 1) {
+		if(Players[id][team] == TS || TT[num] < CT[num] || TT[num] == 0)
+			create_tmenu(id);
+		else {
+			client_printc(id, "!g[!tFatality Family!g] Previse igraca u timu!");
+			menu_destroy(menu);
+			return;
+		}
+	}
+	else if(choice == 2) {
+		if(Players[id][team] == CTS || CT[num] < TT[num] || CT[num] == 0) {
+			create_ctmenu(id);
+		} else {
+			client_printc(id, "!g[!tFatality Family!g] Previse igraca u timu!");
+			menu_destroy(menu);
+			return;
+		}
+	}
+	else if(choice == 5) {
+		engclient_cmd(id, jointeam, "5");
+		engclient_cmd(id, joinclass, "5");
+		Players[id][can_switch] = 0;
+	}
+	else if(choice == 6)
+		if(!is_user_alive(id)) {
+			engclient_cmd(id,jointeam,"3");
+			Players[id][can_switch] = 0;
+		}
+		else client_printc(id, "!g[!tFatality Family!g] Ne mozes uci u spectate dok si ziv!");
+	
+	menu_destroy(menu);
+}
+
+public create_tmenu(id) {
+	new menu = menu_create("Select your appearance", "tmenu_handler");
+
+	menu_additem(menu, "Phoenix Connexion", "1", 0);
+	menu_additem(menu, "Elite Crew", "2", 0);
+	menu_additem(menu, "Arctic Avengers", "3", 0);
+	menu_additem(menu, "Guerilla Warfare", "4", 0); 
+	menu_additem(menu, "Auto-Select", "5", 0); 
+
+	menu_setprop(menu, MPROP_EXIT, MEXIT_ALL);
+	menu_display(id, menu, 0);
+}
+
+public tmenu_handler(id, menu, item) {
+	if (item == MENU_EXIT) {
+		menu_destroy(menu);
+		return;
+	}
+
+	new info[3];
+	menu_item_getinfo(menu, item, _, info, charsmax(info), _, _, _);
+	new choice = str_to_num(info);
+	
+	static jointeam[] = "jointeam";
+	static joinclass[] = "joinclass";
+	engclient_cmd(id, jointeam, "1");
+	engclient_cmd(id, joinclass, "5");
+	
+	if(choice == 1)
+		cs_set_user_model(id, "terror", false);
+	else if(choice == 2)
+		cs_set_user_model(id, "leet", false);
+	else if(choice == 3)
+		cs_set_user_model(id, "arctic", false);
+	else if(choice == 4)
+		cs_set_user_model(id, "guerilla", false);
+	
+	Players[id][can_switch] = 0;
+	Players[id][team] = TS;
+	
+	menu_destroy(menu);
+	return;
+}
+
+public create_ctmenu(id) {
+	new menu = menu_create("Select Your Class:", "ctmenu_handler");
+
+	menu_additem(menu, "Seal Team 6", "1", 0);
+	menu_additem(menu, "GSG-9", "2", 0);
+	menu_additem(menu, "SAS", "3", 0);
+	menu_additem(menu, "GIGN", "4", 0); 
+	menu_additem(menu, "Auto-Select", "5", 0); 
+
+	menu_setprop(menu, MPROP_EXIT, MEXIT_ALL);
+	menu_display(id, menu, 0);
+}
+
+public ctmenu_handler(id, menu, item) {
+	if (item == MENU_EXIT) {
+		menu_destroy(menu);
+		return;
+	}
+
+	new info[3];
+	menu_item_getinfo(menu, item, _, info, charsmax(info), _, _, _);
+	new choice = str_to_num(info);
+	
+	static jointeam[] = "jointeam";
+	static joinclass[] = "joinclass";
+	engclient_cmd(id, jointeam, "2");
+	engclient_cmd(id, joinclass, "5");
+	
+	if(choice == 1)
+		cs_set_user_model(id, "urban", false);
+	else if(choice == 2)
+		cs_set_user_model(id, "gsg9", false);
+	else if(choice == 3)
+		cs_set_user_model(id, "sas", false);
+	else if(choice == 4)
+		cs_set_user_model(id, "gign", false);
+	
+	Players[id][can_switch] = 0;
+	Players[id][team] = CTS;
+	
+	menu_destroy(menu);
+	return;
 }
 
 /*
@@ -367,13 +383,13 @@ public balance_number() {
 }
 
 // TODO: Omoguciti da ga drugi ne ubijaju dok ne krene nova runda
-public transfer_player(params[]) {
+transfer_player(params[]) {
 	if(params[2] == 1)
 		Players[params[0]][last_transfer] = current_round;
 	change_player_team(params[0], params[1]);
 }
 
-public fix_team_numbering() {
+fix_team_numbering() {
 	new sTeam, bTeam;
 	if(CT[num] > TT[num]) {
 		sTeam = TS;
@@ -396,7 +412,7 @@ public fix_team_numbering() {
 	print_transfer(worst_player);
 }
 
-public balance_score() {
+balance_score() {
 	if(current_round < 3) {
 		//client_print(0, print_chat, "Ne balansiram skor u %d. rundi!", current_round);
 		current_round++;
@@ -439,7 +455,7 @@ public balance_score() {
 	return;
 }
 
-public find_switch(CT_candidates[], TT_candidates[], CT_cand_num, TT_cand_num) {
+find_switch(CT_candidates[], TT_candidates[], CT_cand_num, TT_cand_num) {
 	new best_CT = 0, best_TT = 0;
 	new score_diff = abs(CT[tscore] - TT[tscore]);
 	for(new i = 0; i < CT_cand_num; i++) {
@@ -554,10 +570,34 @@ stock change_player_team(id, playerTeam) {
 
 */
 
-bool:flagCheck(id, flag[]) {
+stock bool:flagCheck(id, flag[]) {
 	if(get_user_flags(id) & read_flags(flag))
 		return true;
 	return false;
+}
+
+stock set_player_data(id, t, s, lt, mc, b, d, h, cswt) {
+	Players[id][team] = t;
+	Players[id][score] = s;
+	Players[id][last_transfer] = lt;
+	Players[id][multikill_count] = mc;
+	Players[id][bomb] = b;
+	Players[id][damage] = d;
+	Players[id][hp] = h;
+	Players[id][can_switch] = cswt;
+}
+
+update_player_score(id) {
+	if(Players[id][multikill_count] > 5)
+		Players[id][score] += 4;
+	else if(Players[id][multikill_count] > 2)
+		Players[id][score] += 2;
+		
+	if(Players[id][bomb])
+		Players[id][score] += 2;
+		
+	if(Players[id][damage] >= 300)
+		Players[id][score] += 2;
 }
 
 stock client_printc(const id, const input[]) {
