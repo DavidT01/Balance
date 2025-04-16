@@ -34,8 +34,7 @@ enum Player {
 	score,
 	imm,
 	last_transfer,
-	can_switch,
-	god
+	can_switch
 };
 
 enum Team {
@@ -51,9 +50,11 @@ enum Candidate {
 };
 
 new Players[33][Player];
+new CT[Team], TT[Team];
+
 new CT_candidates[20][Candidate], TT_candidates[20][Candidate];
 new CT_cand_num, TT_cand_num;
-new CT[Team], TT[Team];
+
 new current_round;
 new transfer_in_progress;
 
@@ -80,11 +81,13 @@ public plugin_init() {
 	register_clcmd("chooseteam", "cmd_jointeam");
 	
 	for(new i = 0; i < 33; i++) {
-		set_player_data(i, 0, 0, UNDEFINED, 0, 0, 0, 0, 1, 0);
+		set_player_data(i, 0, 0, UNDEFINED, 0, 0, 0, 0, 1);
 		Players[i][imm] = 0;
 	}
+
 	CT[num] = 0; CT[tscore] = 0; CT[streak] = 0; CT[wins] = 0;
 	TT[num] = 0; TT[tscore] = 0; TT[streak] = 0; TT[wins] = 0;
+
 	current_round = 0;
 	transfer_in_progress = 0;
 }
@@ -104,13 +107,12 @@ public on_death() {
 
 public round_start() {
 	transfer_in_progress = 0;
-	for(new i = 1; i < 33; i++) {
+	for(new i = 1; i <= 32; i++) {
 		Players[i][multikill_count] = 0;
 		if(Players[i][imm] == 1)
 			Players[i][can_switch] = 1;
-		Players[i][god] = 0;
 	}
-	client_print(0, print_chat, "CTS: %d, TS: %d", CT[num], TT[num]);
+	//client_print(0, print_chat, "CTS: %d, TS: %d", CT[num], TT[num]);
 }
 
 public round_restart() {
@@ -168,36 +170,26 @@ public update_team() {
 
 public round_end() {
 	CT[tscore] = 0; TT[tscore] = 0;
-	for(new i = 1; i < 33; i++) {
+	for(new i = 1; i <= 32; i++) {
 		update_player_score(i);
 		if(Players[i][team] == CTS)
 			CT[tscore] += Players[i][score];
 		else if(Players[i][team] == TS)
 			TT[tscore] += Players[i][score];
 	}
-	CT[tscore] /= CT[num]; TT[tscore] /= TT[num];
-	
-	client_print(0, print_console, "************* SCORES *************");
-	new pls[32], n;
-	get_players(pls, n, "c");
-	for(new i = 0; i < n; i++) {
-		new name[32];
-		get_user_name(pls[i], name, 32);
-		client_print(0, print_console, "%s: %d", name, Players[pls[i]][score]);
-	}
-	client_print(0, print_console, "**********************************")
-	
+	CT[tscore] /= CT[num]; TT[tscore] /= TT[num];	
 	
 	//client_print(0, print_chat, "Tim skorovi su azurirani!");
 	set_task(2.5, "balance_number");
 }
 
 public client_authorized(id) {
-	set_player_data(id, 0, 0, UNASSIGNED, 0, 0, 0, 0, 1, 0);
+	set_player_data(id, 0, 0, UNASSIGNED, 0, 0, 0, 0, 1);
+
 	if(flagCheck(id, "a")) {
 		Players[id][imm] = 1;
-		new data[1]; data[0] = id;
-		create_team_menu(data);
+		/*new data[1]; data[0] = id;
+		create_team_menu(data);*/
 	}
 }
 
@@ -206,7 +198,8 @@ public client_disconnected(id) {
 		CT[num]--;
 	else if(Players[id][team] == TS)
 		TT[num]--;
-	set_player_data(id, 0, 0, UNDEFINED, 0, 0, 0, 0, 1, 0);
+
+	set_player_data(id, 0, 0, UNDEFINED, 0, 0, 0, 0, 1);
 	Players[id][imm] = 0;
 }
 
@@ -236,7 +229,7 @@ public cmd_jointeam(id) {
 			create_team_menu(data);
 		}
 		else
-			client_printc(id, "!g[!tFatality Family!g] Ne mozes ponovo promeniti tim.");
+			client_printc(id, "!g[!tFatality Family!g] Ne mozes ponovo promeniti tim u ovoj rundi.");
 	}
 	return PLUGIN_HANDLED;
 }
@@ -275,14 +268,14 @@ public team_menu_handler(id, menu, item) {
 		if(Players[id][team] == TS || TT[num] <= CT[num] || TT[num] == 0) {
 			menu_destroy(menu);
 			if((Players[id][team] == CTS || Players[id][team] == TS) && TT[num] == CT[num]) {
-				client_printc(id, "!g[!tFatality Family!g] Previse igraca u timu!");
+				client_printc(id, "!g[!tFatality Family!g] Previse igraca, ne mozes promeniti tim.");
 				return;
 			}
 			create_tmenu(id);
 			return;
 		}
 		else {
-			client_printc(id, "!g[!tFatality Family!g] Previse igraca u timu!");
+			client_printc(id, "!g[!tFatality Family!g] Previse igraca, ne mozes promeniti tim.");
 			menu_destroy(menu);
 			return;
 		}
@@ -291,13 +284,13 @@ public team_menu_handler(id, menu, item) {
 		if(Players[id][team] == CTS || CT[num] <= TT[num] || CT[num] == 0) {
 			menu_destroy(menu);
 			if((Players[id][team] == CTS || Players[id][team] == TS) && TT[num] == CT[num]) {
-				client_printc(id, "!g[!tFatality Family!g] Previse igraca u timu!");
+				client_printc(id, "!g[!tFatality Family!g] Previse igraca, ne mozes promeniti tim.");
 				return;
 			}
 			create_ctmenu(id);
 			return;
 		} else {
-			client_printc(id, "!g[!tFatality Family!g] Previse igraca u timu!");
+			client_printc(id, "!g[!tFatality Family!g] Previse igraca, ne mozes promeniti tim.");
 			menu_destroy(menu);
 			return;
 		}
@@ -327,7 +320,9 @@ public team_menu_handler(id, menu, item) {
 			engclient_cmd(id,jointeam,"3");
 			Players[id][can_switch] = 0;
 		}
-		else client_printc(id, "!g[!tFatality Family!g] Ne mozes uci u spectate dok si ziv!");
+		else { // TODO: samo prebaciti u spec?
+			client_printc(id, "!g[!tFatality Family!g] Ne mozes uci u Spectate dok si ziv!");
+		}
 	
 	menu_destroy(menu);
 }
@@ -430,15 +425,8 @@ public balance_number() {
 	transfer_in_progress = 1;	
 	while(abs(CT[num] - TT[num]) > 1)
 		fix_team_numbering();
-	client_print(0, print_chat, "Broj igraca je izbalansiran!");
+	//client_print(0, print_chat, "Broj igraca je izbalansiran!");
 	balance_score();
-}
-
-transfer_player(params[]) {
-	if(params[2] == 1)
-		Players[params[0]][last_transfer] = current_round;
-	Players[params[0]][god] = 1;
-	change_player_team(params[0], params[1]);
 }
 
 fix_team_numbering() {
@@ -453,7 +441,7 @@ fix_team_numbering() {
 	}
 	
 	new worst_player = -1, worst_score = 1000;
-	for(new i = 1; i < 33; i++)
+	for(new i = 1; i <= 32; i++)
 		if(Players[i][team] == bTeam && Players[i][score] < worst_score && (current_round - Players[i][last_transfer] >= SWITCH_FREQ || Players[i][last_transfer] == 0)) {
 			worst_score = Players[i][score];
 			worst_player = i;
@@ -472,7 +460,7 @@ balance_score() {
 	}
 	
 	CT_cand_num = 0, TT_cand_num = 0;
-	for(new i = 1; i < 33; i++) {
+	for(new i = 1; i <= 32; i++) {
 		if(/*!flagCheck(i, "l") && */(current_round - Players[i][last_transfer] >= SWITCH_FREQ || Players[i][last_transfer] == 0)) {
 			if(Players[i][team] == CTS) {
 				CT_candidates[CT_cand_num][cid] = i;
@@ -488,24 +476,24 @@ balance_score() {
 	current_round++;
 
 	if(CT_cand_num == 0 || TT_cand_num == 0) {
-		client_print(0, print_chat, "Nisu pronadjeni kandidati za transfer!");
+		client_print(0, print_chat, "Nisu pronadjeni kandidati za transfer.");
 		return;
 	}
 
 	if(CT[streak] >= 3) {
-		client_print(0, print_chat, "CT streak previsok, izvrsavam transfer!");
+		client_print(0, print_chat, "CT streak previsok, izvrsavam transfer.");
 		transfer_better(CTS);
 		return;
 	}
 	else if(TT[streak] >= 3) {
-		client_print(0, print_chat, "TT streak previsok, izvrsavam transfer!");
+		client_print(0, print_chat, "TT streak previsok, izvrsavam transfer.");
 		transfer_better(TS);
 		return;
 	}
 
 	if(CT[wins] != TT[wins]) {
-		client_print(0, print_chat, "Razlika u skorovima veca od 5%, izvrsavam transfer!");
-		find_switch(CT_candidates, TT_candidates, CT_cand_num, TT_cand_num);
+		client_print(0, print_chat, "Razlika u pobedama, izvrsavam transfer.");
+		find_switch();
 	}
 	return;
 }
@@ -514,21 +502,23 @@ transfer_better(better_team) {
 	client_print(0, print_console, "************* CT");
 	for(new i = 0; i < CT_cand_num; i++)
 		client_print(0, print_console, "%d", CT_candidates[i][cscore]);
-	client_print(0, print_console, "************* CT");
+	client_print(0, print_console, "************* TT");
 	for(new i = 0; i < TT_cand_num; i++)
 		client_print(0, print_console, "%d", TT_candidates[i][cscore]);
+
 	sort(CT_candidates, CT_cand_num);
 	sort(CT_candidates, CT_cand_num);
-	client_print(0, print_console, "#########################");
+	client_print(0, print_console, "############ Bolji tim: %d", better_team);
+
 	client_print(0, print_console, "************* CT");
 	for(new i = 0; i < CT_cand_num; i++)
 		client_print(0, print_console, "%d", CT_candidates[i][cscore]);
-	client_print(0, print_console, "************* CT");
+	client_print(0, print_console, "************* TT");
 	for(new i = 0; i < TT_cand_num; i++)
 		client_print(0, print_console, "%d", TT_candidates[i][cscore]);
 }
 
-find_switch(CT_candidates[][Candidate], TT_candidates[][Candidate], CT_cand_num, TT_cand_num) {
+find_switch() {
 	new best_CT = 0, best_TT = 0;
 	new score_diff = abs(CT[tscore] - TT[tscore]);
 	for(new i = 0; i < CT_cand_num; i++) {
@@ -550,6 +540,13 @@ find_switch(CT_candidates[][Candidate], TT_candidates[][Candidate], CT_cand_num,
 		transfer_player(par2);
 		print_switch(best_CT, best_TT);
 	}
+}
+
+// TODO: current_round - 1 jer je vec povecan prethodno?
+transfer_player(params[]) {
+	if(params[2] == 1)
+		Players[params[0]][last_transfer] = current_round - 1;
+	change_player_team(params[0], params[1]);
 }
 
 /*
@@ -661,7 +658,7 @@ stock bool:flagCheck(id, flag[]) {
 	return false;
 }
 
-stock set_player_data(id, k, dt, t, s, lt, mc, dmg, cswt, g) {
+stock set_player_data(id, k, dt, t, s, lt, mc, dmg, cswt) {
 	Players[id][kills] = k;
 	Players[id][deaths] = dt;
 	Players[id][team] = t;
@@ -670,10 +667,9 @@ stock set_player_data(id, k, dt, t, s, lt, mc, dmg, cswt, g) {
 	Players[id][multikill_count] = mc;
 	Players[id][damage] = dmg;
 	Players[id][can_switch] = cswt;
-	Players[id][god] = g;
 }
 
-// score = kpr - dpr + adr
+// score = kpr - dpr + adr/100
 update_player_score(id) {
 	Players[id][score] = (Players[id][kills] - Players[id][deaths] + Players[id][damage] / 100) / current_round;
 }
@@ -705,9 +701,9 @@ stock print_transfer(id) {
 	new name[64], text[256];
 	get_user_name(id, name, 65);
 	if(Players[id][team] == CTS)
-		format(text, 255, "!g[!tFatality Family!g] !t%s !gje prebacen u !tKantere!g!", name);
+		format(text, 255, "!g[!tFatality Family!g] !t%s !gje prebacen u !tKantere!g.", name);
 	else if(Players[id][team] == TS)
-		format(text, 255, "!g[!tFatality Family!g] !t%s !gje prebacen u !tTerore!g!", name);
+		format(text, 255, "!g[!tFatality Family!g] !t%s !gje prebacen u !tTerore!g.", name);
 	client_printc(0, text);
 }
 
@@ -715,7 +711,7 @@ stock print_switch(id1, id2) {
 	new name1[64], name2[64], text[256];
 	get_user_name(id1, name1, 65);
 	get_user_name(id2, name2, 65);
-	format(text, 255, "!g[!tFatality Family!g] !t%s !gi !t%s !g su zamenjeni!", name1, name2);
+	format(text, 255, "!g[!tFatality Family!g] !t%s !gi !t%s !g su zamenjeni.", name1, name2);
 	client_printc(0, text);
 }
 
@@ -735,3 +731,6 @@ stock sort(array[][Candidate], size) {
 			break;
 	}
 }
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
+*/
