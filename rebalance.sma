@@ -30,7 +30,6 @@ enum Player {
 	deaths,
 	multikill_count,
 	damage,
-	hp,
 	team,
 	score,
 	imm,
@@ -81,7 +80,7 @@ public plugin_init() {
 	register_clcmd("chooseteam", "cmd_jointeam");
 	
 	for(new i = 0; i < 33; i++) {
-		set_player_data(i, 0, 0, UNDEFINED, 0, 0, 0, 0, 0, 1, 0);
+		set_player_data(i, 0, 0, UNDEFINED, 0, 0, 0, 0, 1, 0);
 		Players[i][imm] = 0;
 	}
 	CT[num] = 0; CT[tscore] = 0; CT[streak] = 0; CT[wins] = 0;
@@ -107,7 +106,6 @@ public round_start() {
 	transfer_in_progress = 0;
 	for(new i = 1; i < 33; i++) {
 		Players[i][multikill_count] = 0;
-		Players[i][hp] = 100;
 		if(Players[i][imm] == 1)
 			Players[i][can_switch] = 1;
 		Players[i][god] = 0;
@@ -120,14 +118,12 @@ public round_restart() {
 }
 
 public damage_taken(victim, inflictor, attacker, Float:dmg, damagebits) {
-	if(transfer_in_progress) {
+	if(transfer_in_progress)
 		return HAM_SUPERCEDE;
-	}
 
-	if (attacker > 0 && attacker <= 32 && Players[victim][team] != Players[attacker][team]) {
-		Players[victim][hp] -= floatround(dmg);
+	if (attacker > 0 && attacker <= 32 && Players[victim][team] != Players[attacker][team])
 		Players[attacker][damage] += floatround(dmg);
-	}
+
 	return HAM_IGNORED;
 }
 
@@ -197,7 +193,7 @@ public round_end() {
 }
 
 public client_authorized(id) {
-	set_player_data(id, 0, 0, UNASSIGNED, 0, 0, 0, 0, 0, 1, 0);
+	set_player_data(id, 0, 0, UNASSIGNED, 0, 0, 0, 0, 1, 0);
 	if(flagCheck(id, "a")) {
 		Players[id][imm] = 1;
 		new data[1]; data[0] = id;
@@ -210,7 +206,7 @@ public client_disconnected(id) {
 		CT[num]--;
 	else if(Players[id][team] == TS)
 		TT[num]--;
-	set_player_data(id, 0, 0, UNDEFINED, 0, 0, 0, 0, 0, 1, 0);
+	set_player_data(id, 0, 0, UNDEFINED, 0, 0, 0, 0, 1, 0);
 	Players[id][imm] = 0;
 }
 
@@ -665,7 +661,7 @@ stock bool:flagCheck(id, flag[]) {
 	return false;
 }
 
-stock set_player_data(id, k, dt, t, s, lt, mc, dmg, h, cswt, g) {
+stock set_player_data(id, k, dt, t, s, lt, mc, dmg, cswt, g) {
 	Players[id][kills] = k;
 	Players[id][deaths] = dt;
 	Players[id][team] = t;
@@ -673,7 +669,6 @@ stock set_player_data(id, k, dt, t, s, lt, mc, dmg, h, cswt, g) {
 	Players[id][last_transfer] = lt;
 	Players[id][multikill_count] = mc;
 	Players[id][damage] = dmg;
-	Players[id][hp] = h;
 	Players[id][can_switch] = cswt;
 	Players[id][god] = g;
 }
