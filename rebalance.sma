@@ -81,7 +81,7 @@ public plugin_init() {
 	register_clcmd("chooseteam", "cmd_jointeam");
 	
 	for(new i = 0; i < 33; i++) {
-		set_player_data(i, 0, 0, UNDEFINED, 0, 0, 0, 0, 1);
+		set_player_data(i, 0, 0, UNASSIGNED, 0, 0, 0, 0, 1);
 		Players[i][imm] = 0;
 	}
 
@@ -199,7 +199,7 @@ public client_disconnected(id) {
 	else if(Players[id][team] == TS)
 		TT[num]--;
 
-	set_player_data(id, 0, 0, UNDEFINED, 0, 0, 0, 0, 1);
+	set_player_data(id, 0, 0, UNASSIGNED, 0, 0, 0, 0, 1);
 	Players[id][imm] = 0;
 }
 
@@ -315,14 +315,15 @@ public team_menu_handler(id, menu, item) {
 		engclient_cmd(id, joinclass, "5");
 		Players[id][can_switch] = 0;
 	}
-	else if(choice == 6)
+	else if(choice == 6) { // Kad udjes u spec na pocetku mape ponovo izbacuje meni
 		if(!is_user_alive(id)) {
-			engclient_cmd(id,jointeam,"3");
+			engclient_cmd(id, jointeam, "3");
 			Players[id][can_switch] = 0;
 		}
-		else { // TODO: samo prebaciti u spec?
+		else {
 			client_printc(id, "!g[!tFatality Family!g] Ne mozes uci u Spectate dok si ziv!");
 		}
+	}
 	
 	menu_destroy(menu);
 }
@@ -507,7 +508,7 @@ transfer_better(better_team) {
 		client_print(0, print_console, "%d", TT_candidates[i][cscore]);
 
 	sort(CT_candidates, CT_cand_num);
-	sort(CT_candidates, CT_cand_num);
+	sort(TT_candidates, TT_cand_num);
 	client_print(0, print_console, "############ Bolji tim: %d", better_team);
 
 	client_print(0, print_console, "************* CT");
@@ -542,7 +543,6 @@ find_switch() {
 	}
 }
 
-// TODO: current_round - 1 jer je vec povecan prethodno?
 transfer_player(params[]) {
 	if(params[2] == 1)
 		Players[params[0]][last_transfer] = current_round - 1;
@@ -556,26 +556,26 @@ transfer_player(params[]) {
 */
 
 public message_show_menu(msgid, dest, id) {
-
-	static team_select[] = "#Team_Select"
-	static menu_text_code[sizeof team_select]
-	get_msg_arg_string(4, menu_text_code, sizeof menu_text_code - 1)
+	static team_select[] = "#Team_Select";
+	static menu_text_code[sizeof team_select];
+	get_msg_arg_string(4, menu_text_code, sizeof menu_text_code - 1);
 	if (!equal(menu_text_code, team_select))
-		return PLUGIN_CONTINUE
-	/*static buffer[32];
-	get_msg_arg_string(4, buffer, charsmax(buffer));
-	client_print(id, print_chat, "%s", buffer);
-	if(containi(buffer, "Team") != -1 || containi(buffer, "Select") != -1) {*/
+		return PLUGIN_CONTINUE;
+		
+	//if(containi(menu_text_code, "#Team_Select") < 0 && containi(menu_text_code, "#IG_Team_Select") < 0)
+	//	return PLUGIN_CONTINUE;
+
 	if(Players[id][imm] == 0) {
 		set_force_team_join_task(id, msgid);
 		return PLUGIN_HANDLED;
 	}
-	else {
+	else if(containi(menu_text_code, "IG_Team") < 0) {
+		client_print(0, print_chat, "%s", menu_text_code);
 		new data[1]; data[0] = id;
 		set_task(1.0, "create_team_menu", id, data, sizeof(data));
 		return PLUGIN_HANDLED;
 	}
-	//}
+	return PLUGIN_HANDLED;
 }
 
 public message_vgui_menu(msgid, dest, id) {
@@ -586,6 +586,7 @@ public message_vgui_menu(msgid, dest, id) {
 			return PLUGIN_HANDLED;
 		}
 		else {
+			//client_print(0, print_chat, "%d %d", menuid, msgid);
 			new data[1]; data[0] = id;
 			set_task(1.0, "create_team_menu", id, data, sizeof(data));
 			return PLUGIN_HANDLED;
@@ -593,39 +594,38 @@ public message_vgui_menu(msgid, dest, id) {
 	}
 	else if(menuid == VGUI_Menu_Class_CT || menuid == VGUI_Menu_Class_T)
 		return PLUGIN_HANDLED;
-	else
-		return PLUGIN_CONTINUE;
+	return PLUGIN_CONTINUE;
 }
 
 set_force_team_join_task(id, menu_msgid) {
-	static param_menu_msgid[2]
-	param_menu_msgid[0] = menu_msgid
-	set_task(AUTO_TEAM_JOIN_DELAY, "task_force_team_join", id, param_menu_msgid, sizeof param_menu_msgid)
+	static param_menu_msgid[2];
+	param_menu_msgid[0] = menu_msgid;
+	set_task(AUTO_TEAM_JOIN_DELAY, "task_force_team_join", id, param_menu_msgid, sizeof param_menu_msgid);
 }
 
 public task_force_team_join(menu_msgid[], id) {
 	if (get_user_team(id))
-		return
+		return;
 
-	force_team_join(id, menu_msgid[0], "5")
+	force_team_join(id, menu_msgid[0], "5");
 }
 
 stock force_team_join(id, menu_msgid, /* const */ class[] = "0") {
-	static jointeam[] = "jointeam"
+	static jointeam[] = "jointeam";
 	if (class[0] == '0') {
-		engclient_cmd(id, jointeam, "5")
-		return
+		engclient_cmd(id, jointeam, "5");
+		return;
 	}
 
-	static msg_block, joinclass[] = "joinclass"
-	msg_block = get_msg_block(menu_msgid)
-	set_msg_block(menu_msgid, BLOCK_SET)
+	static msg_block, joinclass[] = "joinclass";
+	msg_block = get_msg_block(menu_msgid);
+	set_msg_block(menu_msgid, BLOCK_SET);
 	if(CT[num] >= TT[num])
 		engclient_cmd(id, jointeam, "2");
 	else
 		engclient_cmd(id, jointeam, "1");
-	engclient_cmd(id, joinclass,"5")
-	set_msg_block(menu_msgid, msg_block)
+	engclient_cmd(id, joinclass,"5");
+	set_msg_block(menu_msgid, msg_block);
 }
 
 stock change_player_team(id, playerTeam) {
@@ -633,7 +633,8 @@ stock change_player_team(id, playerTeam) {
 	if(!g_pMsgTeamInfo)
 		g_pMsgTeamInfo = get_user_msgid("TeamInfo");
 
-	cs_set_user_defuse(id, 0);
+	if(cs_get_user_defuse(id))
+		cs_set_user_defuse(id, 0);
 	cs_set_user_team(id, playerTeam);
 	emessage_begin(MSG_BROADCAST, g_pMsgTeamInfo);
 	ewrite_byte(id);
@@ -669,9 +670,8 @@ stock set_player_data(id, k, dt, t, s, lt, mc, dmg, cswt) {
 	Players[id][can_switch] = cswt;
 }
 
-// score = kpr - dpr + adr/100
 update_player_score(id) {
-	Players[id][score] = (Players[id][kills] - Players[id][deaths] + Players[id][damage] / 100) / current_round;
+	Players[id][score] = (Players[id][kills] - Players[id][deaths] / 2 + Players[id][damage] / 50) / current_round;
 }
 
 stock client_printc(const id, const input[]) {
@@ -731,6 +731,3 @@ stock sort(array[][Candidate], size) {
 			break;
 	}
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
-*/
