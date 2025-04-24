@@ -5,9 +5,9 @@
 <hr>
 
 Plugin handles:
-- Joining and switching team restrictions and regulations.
-- Special commands for admins (`/spec` and `/back`)
-- Custom balancing algorithm that calculates player scores using in-game statistics (such as kills, deaths, multi-kill count, damage, etc) and balances teams to make the average team score difference between them as least as possible.
+- Team joining and switching restrictions and regulations.
+- Special admin commands. (`/spec` and `/back`)
+- Custom balancing algorithm that calculates player scores using in-game statistics (such as kills, deaths, multi-kill count, damage, etc) and makes the team score difference as least as possible.
 
 <hr>
 
