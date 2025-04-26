@@ -8,8 +8,8 @@
 #include <fun>
 
 #define PLUGIN "ReBalance"
-#define VERSION "1.0"
-#define AUTHOR "treachery, fckn A."
+#define VERSION "2.0"
+#define AUTHOR "fckn, treachery"
 
 #define UNASSIGNED	 	0
 #define TS 			1
@@ -79,11 +79,7 @@ public plugin_init() {
 	RegisterHam(Ham_TakeDamage, "player", "damage_taken", false); // Damage Tracking
 	RegisterHam(Ham_Spawn, "player", "on_spawn", false); // Spawn
 
-	// jointeam & chooseteam
-	RegisterHookChain(RG_HandleMenu_ChooseTeam, "handlemenu", false);
-	RegisterHookChain(RG_ShowVGUIMenu, "vguimenu", false);
-	//RegisterHookChain(RG_ShowMenu, "showmenu", false);
-	//RegisterHookChain(RG_HandleMenu_ChooseAppearance, "chooseapp", false);
+	// jointeam
 	register_clcmd("jointeam", "block_jointeam");
 	register_message(get_user_msgid("ShowMenu"), "message_show_menu");
 	register_message(get_user_msgid("VGUIMenu"), "message_vgui_menu");
@@ -112,16 +108,6 @@ public plugin_init() {
 	transfer_in_progress = 0;
 }
 
-/*public showmenu(const index, const bitsSlots, const iDisplayTime, const iNeedMore, pszText[]) {
-	client_print(index, print_console, "jointeam");
-	return HC_CONTINUE;
-}
-
-public chooseapp(const index, const slot) {
-	client_print(index, print_console, "jointeam");
-	return HC_CONTINUE;
-}*/
-
 public handle_say(id) {
  	new msg[192];
  	read_args(msg, charsmax(msg));
@@ -147,77 +133,6 @@ public block_jointeam(id) {
 	if(is_user_alive(id))
 		user_silentkill(id);
 	return PLUGIN_CONTINUE;
-}
-	
-public vguimenu(const index, VGUIMenu:menuType, const bitsSlots, szOldMenu[]) {
-	if(menuType != VGUI_Menu_Team)
-		return HC_CONTINUE;
-	if(!Players[index][imm] && Players[index][auto_joined]) {
-		client_printc(index, "!g[!tFatality Family!g] Menjanje tima je zabranjeno.");
-		SetHookChainReturn(ATYPE_INTEGER, 0);
-		return HC_BREAK;
-	}
-	if(Players[index][imm] && Players[index][can_switch] == 0) {
-		client_printc(index, "!g[!tFatality Family!g] Ne mozes ponovo promeniti tim u ovoj rundi.");
-		SetHookChainReturn(ATYPE_INTEGER, 0);
-		return HC_BREAK;
-	}
-	return HC_CONTINUE;
-}
-
-public handlemenu(const id,  const MenuChooseTeam:slot) {
-	if(!Players[id][imm] && Players[id][auto_joined]) {
-		//client_printc(id, "!g[!tFatality Family!g] Menjanje tima je zabranjeno 2.");
-		SetHookChainReturn(ATYPE_INTEGER, 0);
-		return HC_BREAK;
-	}
-	switch(slot) {
-		case MenuChoose_CT: {
-			if(CT[num] >= TT[num] && Players[id][team] != CTS && CT[num] != 0) {
-				client_printc(id, "!g[!tFatality Family!g] Previse igraca u CT timu.");
-				SetHookChainReturn(ATYPE_INTEGER, 0);
-				return HC_BREAK;
-			}
-			SetHookChainArg(2, ATYPE_INTEGER, 2);
-		}
-		case MenuChoose_T: {
-			if(TT[num] >= CT[num] && Players[id][team] != TS && TT[num] != 0) {
-				client_printc(id, "!g[!tFatality Family!g] Previse igraca u  TT timu.");
-				SetHookChainReturn(ATYPE_INTEGER, 0);
-				return HC_BREAK;
-			}
-			SetHookChainArg(2, ATYPE_INTEGER, 1);
-		}
-		case MenuChoose_AutoSelect: {
-			if(CT[num] < TT[num]) {
-				SetHookChainArg(2, ATYPE_INTEGER, 2);
-			}
-			else if(TT[num] < CT[num]) {
-				SetHookChainArg(2, ATYPE_INTEGER, 1);
-			}
-			else {
-				if(Players[id][team] == CTS)
-					SetHookChainArg(2, ATYPE_INTEGER, 2);
-				else if(Players[id][team] == TS)
-					SetHookChainArg(2, ATYPE_INTEGER, 1);
-				else
-					SetHookChainArg(2, ATYPE_INTEGER, random(2) + 1);
-			}
-		}
-		case MenuChoose_Spec: {
-			if(!Players[id][imm] && !flag_check(id, "d")) {
-				client_printc(id, "!g[!tFatality Family!g] Menjanje tima je zabranjeno.");
-				SetHookChainReturn(ATYPE_INTEGER, 0);
-				return HC_BREAK;
-			}
-			SetHookChainArg(2, ATYPE_INTEGER, 6);
-		}
-		default: {
-			SetHookChainReturn(ATYPE_INTEGER, 0);
-			return HC_BREAK;
-		}
-	}
-	return HC_CONTINUE;
 }
 
 public on_death() {
