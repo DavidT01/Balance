@@ -79,8 +79,9 @@ public plugin_init() {
 	RegisterHam(Ham_TakeDamage, "player", "damage_taken", false); // Damage Tracking
 	RegisterHam(Ham_Spawn, "player", "on_spawn", false); // Spawn
 
-	// jointeam
+	// jointeam && chooseteam
 	register_clcmd("jointeam", "block_jointeam");
+	register_clcmd("chooseteam", "block_chooseteam");
 	register_message(get_user_msgid("ShowMenu"), "message_show_menu");
 	register_message(get_user_msgid("VGUIMenu"), "message_vgui_menu");
 	
@@ -109,6 +110,8 @@ public plugin_init() {
 }
 
 public handle_say(id) {
+	if(!Players[id][admin])
+		return;
  	new msg[192];
  	read_args(msg, charsmax(msg));
  	remove_quotes(msg);
@@ -129,9 +132,33 @@ public handle_say(id) {
 	}
 }
 
+public block_chooseteam(id) {
+	if(!Players[id][imm]) {
+		client_printc(id, "!g[!tFatality Family!g] Menjanje tima je zabranjeno.");
+		return PLUGIN_HANDLED;
+	}
+	return PLUGIN_CONTINUE;
+}
+
 public block_jointeam(id) {
-	if(is_user_alive(id))
+	new argc = read_argc();
+	if(argc != 2)
+		return PLUGIN_HANDLED;
+	new choice = read_argv_int(1);
+	
+	if(choice == 6 && is_user_alive(id))
 		user_silentkill(id);
+
+	if(!Players[id][imm]) {
+		client_printc(id, "!g[!tFatality Family!g] Menjanje tima je zabranjeno.");
+		return PLUGIN_HANDLED;
+	}
+
+	if((choice == 1 && TT[num] > CT[num]) || (choice == 2 && CT[num] > TT[num])) {
+		client_printc(id, "!g[!tFatality Family!g] Previse igraca u timu.");
+		return PLUGIN_HANDLED;
+	}
+
 	return PLUGIN_CONTINUE;
 }
 
@@ -318,7 +345,7 @@ fix_team_numbering() {
 
 balance_score() {
 	if(current_round < 3) {
-		client_print(0, print_chat, "Ne balansiram skor u %d. rundi!", current_round);
+		//client_print(0, print_chat, "Ne balansiram skor u %d. rundi!", current_round);
 		current_round++;
 		return;
 	}
@@ -601,7 +628,7 @@ stock print_switch(id1, id2) {
 	new name1[64], name2[64], text[256];
 	get_user_name(id1, name1, 65);
 	get_user_name(id2, name2, 65);
-	format(text, 255, "!g[!tFatality Family!g] !t%s !gi !t%s !g su zamenjeni.", name1, name2);
+	format(text, 255, "!g[!tFatality Family!g] !t%s !gi !t%s !gsu zamenjeni.", name1, name2);
 	client_printc(0, text);
 }
 
@@ -621,6 +648,3 @@ stock sort(array[][Candidate], size) {
 			break;
 	}
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
-*/
