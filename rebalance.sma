@@ -20,11 +20,10 @@
 
 #define AUTO_TEAM_JOIN_DELAY 0.1
 #define TEAM_SELECT_VGUI_MENU_ID 2
-#define VGUI_Menu_Class_T 26
-#define VGUI_Menu_Class_CT 27
 
 // 1 po mapi -> 8
 #define SWITCH_FREQ 7
+#define MIN_PLAYERS 8
 
 enum Player {
 	kills,
@@ -314,10 +313,10 @@ public balance_number() {
 	while(abs(CT[num] - TT[num]) > 1)
 		fix_team_numbering();
 
-	//if(CT[num] + TT[num] >= 10)
-	balance_score();
-	//else
-	//	current_round++;
+	if(CT[num] + TT[num] >= MIN_PLAYERS)
+		balance_score();
+	else
+		current_round++;
 }
 
 fix_team_numbering() {
@@ -352,7 +351,7 @@ balance_score() {
 	
 	CT_cand_num = 0, TT_cand_num = 0;
 	for(new i = 1; i <= 32; i++) {
-		if(/*!flag_check(i, "l") && */(current_round - Players[i][last_transfer] >= SWITCH_FREQ || Players[i][last_transfer] == 0)) {
+		if(!flag_check(i, "l") && (current_round - Players[i][last_transfer] >= SWITCH_FREQ || Players[i][last_transfer] == 0)) {
 			if(Players[i][team] == CTS) {
 				CT_candidates[CT_cand_num][cid] = i;
 				CT_candidates[CT_cand_num++][cscore] = Players[i][score];
