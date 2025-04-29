@@ -142,7 +142,7 @@ public block_chooseteam(id) {
 		return PLUGIN_HANDLED;
 	}
 	
-	if(Players[id][can_be_transfered] && current_round - Players[id][last_transfer] < 4) {
+	if(Players[id][can_be_transfered] && current_round - Players[id][last_transfer] < 4 && Players[id][last_transfer] > 0) {
 		client_printc(id, "!g[!tFatality Family!g] Prebacen si u poslednje tri runde.");
 		return PLUGIN_HANDLED;
 	}
@@ -170,7 +170,7 @@ public block_jointeam(id) {
 		return PLUGIN_HANDLED;
 	}
 	
-	if(Players[id][can_be_transfered] && current_round - Players[id][last_transfer] < 4) {
+	if(Players[id][can_be_transfered] && current_round - Players[id][last_transfer] < 4 && Players[id][last_transfer] > 0) {
 		client_printc(id, "!g[!tFatality Family!g] Prebacen si u poslednje tri runde.");
 		return PLUGIN_HANDLED;
 	}
@@ -451,11 +451,7 @@ transfer_streak(better_team) {
 		else if(CT_cand_num > 3)
 			ind = random(3) + 1;
 		params[0] = CT_candidates[ind][cid]; params[1] = TS;
-		if(TT_cand_num - 1 - ind < 0)
-			params2[0] = TT_candidates[TT_cand_num - 1][cid];
-		else
-			params2[0] = TT_candidates[TT_cand_num - 1 - ind][cid];
-		params2[1] = CTS;
+		params2[0] = TT_candidates[TT_cand_num - 1][cid]; params2[1] = CTS;
 	}
 	else if(better_team == TS) {
 		if(TT_cand_num == 1)
@@ -467,11 +463,7 @@ transfer_streak(better_team) {
 		else if(TT_cand_num > 3)
 			ind = random(3) + 1;
 		params[0] = TT_candidates[ind][cid]; params[1] = CTS;
-		if(CT_cand_num - 1 - ind < 0)
-			params2[0] = CT_candidates[CT_cand_num - 1][cid];
-		else
-			params2[0] = CT_candidates[CT_cand_num - 1 - ind][cid];
-		params2[1] = TS;
+		params2[0] = CT_candidates[CT_cand_num - 1][cid]; params2[1] = TS;
 	}
 
 	transfer_player(params);
