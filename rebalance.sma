@@ -58,7 +58,7 @@ new CT_candidates[20][Candidate], TT_candidates[20][Candidate];
 new CT_cand_num, TT_cand_num;
 
 new current_round;
-new transfer_in_progress;
+//new transfer_in_progress;
 new transfer_count;
 
 new logf[32];
@@ -106,7 +106,7 @@ public plugin_init() {
 	TT[num] = 0; TT[tscore] = 0; TT[streak] = 0; TT[wins] = 0;
 
 	current_round = 0;
-	transfer_in_progress = 0;
+	//transfer_in_progress = 0;
 	transfer_count = 0;
 }
 
@@ -199,7 +199,7 @@ public on_death() {
 }
 
 public round_start() {
-	transfer_in_progress = 0;
+	//transfer_in_progress = 0;
 	for(new i = 1; i <= 32; i++)
 		Players[i][multikill_count] = 0;
 	//log_to_file(logf, "[Runda %d] CT: %d, TT: %d", current_round, CT[num], TT[num]);
@@ -208,12 +208,12 @@ public round_start() {
 public round_restart() {
 	balance_number();
 	current_round = 1;
-	transfer_in_progress = 0;
+	//transfer_in_progress = 0;
 }
 
 public damage_taken(victim, inflictor, attacker, Float:dmg, damagebits) {
-	if(transfer_in_progress)
-		return HAM_SUPERCEDE;
+	/*if(transfer_in_progress)
+		return HAM_SUPERCEDE;*/
 
 	if (attacker > 0 && attacker <= 32 && Players[victim][team] != Players[attacker][team])
 		Players[attacker][damage] += floatround(dmg);
@@ -296,7 +296,7 @@ public client_authorized(id) {
 	if(flag_check(id, "l") || equal(steamid, "STEAM_0:0:216817879"))
 		Players[id][can_be_transfered] = 0;
 	// botovi
-	else if(equal(steamid, "STEAM_1:0:984556879") || equal(steamid, "STEAM_1:0:1619668816") || equal(steamid, "STEAM_1:0:922772504") || equal(steamid, "STEAM_1:0:1858914077") || equal(steamid, "STEAM_1:1:1046450049") || equal(steamid, "STEAM_1:1:2109445265"))
+	else if(droga_bot(id))
 		Players[id][can_be_transfered] = 0;
 	else
 		Players[id][can_be_transfered] = 1;
@@ -337,10 +337,7 @@ public client_death(killer, victim, wpnindex) {
 */
 
 public balance_number() {
-	if(current_round == 11)
-		return;
-
-	transfer_in_progress = 1;
+	//transfer_in_progress = 1;
 	
 	while(abs(CT[num] - TT[num]) > 1)
 		fix_team_numbering();
@@ -362,7 +359,7 @@ fix_team_numbering() {
 		bTeam = TS;
 	}
 
-	new worst_player = -1, oldest_transfer = 11;
+	new worst_player = -1, oldest_transfer = 1000;
 	for(new i = 1; i <= 32; i++)
 		if(Players[i][can_be_transfered] && Players[i][team] == bTeam && Players[i][last_transfer] < oldest_transfer)
 			oldest_transfer = Players[i][last_transfer];
@@ -375,8 +372,10 @@ fix_team_numbering() {
 	
 	worst_player = oldest_transfered_players[random(j)];
 	
-	if(worst_player == -1)
+	if(worst_player == -1) {
+		log_to_file(logf, "[Runda %d] NE POSTOJI VALIDAN IGRAC ZA BALANSIRANJE BROJA!");
 		return;
+	}
 	
 	new params[2]; params[0] = worst_player; params[1] = sTeam;
 	transfer_player(params);
@@ -688,4 +687,3 @@ stock bool:droga_bot(id) {
 		return true;
 	return false
 }
-
