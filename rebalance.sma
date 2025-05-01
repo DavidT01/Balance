@@ -58,7 +58,7 @@ new CT_candidates[20][Candidate], TT_candidates[20][Candidate];
 new CT_cand_num, TT_cand_num;
 
 new current_round;
-//new transfer_in_progress;
+new transfer_in_progress;
 new transfer_count;
 
 new logf[32];
@@ -105,9 +105,9 @@ public plugin_init() {
 	CT[num] = 0; CT[tscore] = 0; CT[streak] = 0; CT[wins] = 0;
 	TT[num] = 0; TT[tscore] = 0; TT[streak] = 0; TT[wins] = 0;
 
-	current_round = 0;
-	//transfer_in_progress = 0;
+	current_round = 1;
 	transfer_count = 0;
+	disable_progress();
 }
 
 public handle_say(id) {
@@ -199,21 +199,23 @@ public on_death() {
 }
 
 public round_start() {
-	//transfer_in_progress = 0;
 	for(new i = 1; i <= 32; i++)
 		Players[i][multikill_count] = 0;
+	disable_progress();
+	set_task(3.0, "disable_progress");
 	//log_to_file(logf, "[Runda %d] CT: %d, TT: %d", current_round, CT[num], TT[num]);
 }
 
 public round_restart() {
 	balance_number();
 	current_round = 1;
-	//transfer_in_progress = 0;
+	disable_progress();
+	set_task(3.0, "disable_progress");
 }
 
 public damage_taken(victim, inflictor, attacker, Float:dmg, damagebits) {
-	/*if(transfer_in_progress)
-		return HAM_SUPERCEDE;*/
+	if(transfer_in_progress)
+		return HAM_SUPERCEDE;
 
 	if (attacker > 0 && attacker <= 32 && Players[victim][team] != Players[attacker][team])
 		Players[attacker][damage] += floatround(dmg);
@@ -292,8 +294,8 @@ public client_authorized(id) {
 
 	new steamid[32]; get_user_authid(id, steamid, 32);
 
-	// L flag i tea
-	if(flag_check(id, "l") || equal(steamid, "STEAM_0:0:216817879"))
+	// L flag / tea / loca
+	if(flag_check(id, "l") || equal(steamid, "STEAM_0:0:216817879") || equal(steamid, "STEAM_0:0:869945501"))
 		Players[id][can_be_transfered] = 0;
 	// botovi
 	else if(droga_bot(id))
@@ -337,7 +339,7 @@ public client_death(killer, victim, wpnindex) {
 */
 
 public balance_number() {
-	//transfer_in_progress = 1;
+	transfer_in_progress = 1;
 	
 	while(abs(CT[num] - TT[num]) > 1)
 		fix_team_numbering();
@@ -358,6 +360,8 @@ fix_team_numbering() {
 		sTeam = CTS;
 		bTeam = TS;
 	}
+	else
+		return;
 
 	new worst_player = -1, oldest_transfer = 1000;
 	for(new i = 1; i <= 32; i++)
@@ -373,7 +377,7 @@ fix_team_numbering() {
 	worst_player = oldest_transfered_players[random(j)];
 	
 	if(worst_player == -1) {
-		log_to_file(logf, "[Runda %d] NE POSTOJI VALIDAN IGRAC ZA BALANSIRANJE BROJA!");
+		log_to_file(logf, "[Runda %d] UPOZORENJE: Ne postoji validan igrac za balansiranje broja.", current_round);
 		return;
 	}
 	
@@ -431,7 +435,6 @@ balance_score() {
 		log_to_file(logf, "[Runda %d] Razlika u pobedama.", current_round - 1);
 		find_switch();
 	}
-	return;
 }
 
 transfer_streak(better_team) {
@@ -497,6 +500,16 @@ find_switch() {
 }
 
 transfer_player(params[]) {
+	if(params[0] < 1 || params[0] > 32) {
+		log_to_file(logf, "[Runda %d] GRESKA: ID (%d) nije validan.", current_round - 1, params[0]);
+		return;
+	}
+
+	if(params[1] != CTS && params[1] != TS) {
+		log_to_file(logf, "[Runda %d] GRESKA: Tim (%d) nije validan.", current_round - 1, params[1]);
+		return;
+	}
+
 	Players[params[0]][last_transfer] = current_round - 1;
 	change_player_team(params[0], params[1]);
 }
@@ -686,4 +699,8 @@ stock bool:droga_bot(id) {
 	equal(steamid, "STEAM_1:1:1063259102") || equal(steamid, "STEAM_1:0:346051284") || equal(steamid, "STEAM_1:0:2135450009"))
 		return true;
 	return false
+}
+
+public disable_progress() {
+	transfer_in_progress = 0;
 }
