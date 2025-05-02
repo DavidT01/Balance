@@ -21,8 +21,7 @@
 #define AUTO_TEAM_JOIN_DELAY 0.1
 #define TEAM_SELECT_VGUI_MENU_ID 2
 
-// 1 po mapi -> 8
-#define SWITCH_FREQ 8
+#define SWITCH_FREQ 10
 #define MIN_PLAYERS 8
 
 enum Player {
