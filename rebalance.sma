@@ -213,7 +213,7 @@ public round_restart() {
 }
 
 public damage_taken(victim, inflictor, attacker, Float:dmg, damagebits) {
-	if(transfer_in_progress)
+	if(transfer_in_progress && attacker > 0 && attacker <= 32)
 		return HAM_SUPERCEDE;
 
 	if (attacker > 0 && attacker <= 32 && Players[victim][team] != Players[attacker][team])
