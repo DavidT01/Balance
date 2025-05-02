@@ -268,6 +268,13 @@ public update_team() {
 }
 
 public round_end() {
+	
+	new max_rounds = get_cvar_num("mp_maxrounds");
+	if(current_round == max_rounds && max_rounds > 0) {
+		set_task(2.0, "print_nextmap");
+		return;
+	}
+	
 	CT[tscore] = 0; TT[tscore] = 0;
 	for(new i = 1; i <= 32; i++) {
 		update_player_score(i);
@@ -703,3 +710,13 @@ stock bool:droga_bot(id) {
 public disable_progress() {
 	transfer_in_progress = 0;
 }
+
+public print_nextmap() {
+	new map[50], text[256];
+	get_cvar_string("amx_nextmap", map, charsmax(map));
+	format(text, 255, "!g[!tFatality Family!g] Sledeca mapa je !t%s!g.", map);
+	client_printc(0, text);
+}
+/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
+*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
+*/
