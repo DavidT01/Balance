@@ -213,7 +213,7 @@ public round_restart() {
 }
 
 public damage_taken(victim, inflictor, attacker, Float:dmg, damagebits) {
-	if(transfer_in_progress && attacker > 0 && attacker <= 32)
+	if(transfer_in_progress && attacker > 0 && attacker <= 32 && attacker != victim)
 		return HAM_SUPERCEDE;
 
 	if (attacker > 0 && attacker <= 32 && Players[victim][team] != Players[attacker][team])
@@ -286,7 +286,7 @@ public round_end() {
 	CT[tscore] = CT[num] == 0 ? 0 : CT[tscore] / CT[num];
 	TT[tscore] = TT[num] == 0 ? 0 : TT[tscore] / TT[num];	
 
-	set_task(3.5, "balance_number");
+	set_task(4.0, "balance_number");
 }
 
 public client_authorized(id) {
@@ -309,8 +309,8 @@ public client_authorized(id) {
 	else
 		Players[id][can_be_transfered] = 1;
 		
-	// fckn
-	if(equal(steamid, "STEAM_0:0:644303"))
+	// fckn / treachery
+	if(equal(steamid, "STEAM_0:0:644303") || equal(steamid, "STEAM_0:1:78831111"))
 		Players[id][can_be_transfered] = 1;
 }
 
@@ -717,6 +717,3 @@ public print_nextmap() {
 	format(text, 255, "!g[!tFatality Family!g] Sledeca mapa je !t%s!g.", map);
 	client_printc(0, text);
 }
-/* AMXX-Studio Notes - DO NOT MODIFY BELOW HERE
-*{\\ rtf1\\ ansi\\ deff0{\\ fonttbl{\\ f0\\ fnil Tahoma;}}\n\\ viewkind4\\ uc1\\ pard\\ lang1033\\ f0\\ fs16 \n\\ par }
-*/
